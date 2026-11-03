@@ -1,22 +1,24 @@
-// Huvudlogik för Kollad frontend
 document.addEventListener('DOMContentLoaded', () => {
-    const checkButton = document.getElementById('checkButton');
-    const inputField = document.getElementById('inputField');
-    const resultContainer = document.getElementById('resultContainer');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const userInput = document.getElementById('userInput');
+    const resultCard = document.getElementById('resultCard');
+    const resultDescription = document.getElementById('resultDescription');
 
-    if (checkButton) {
-        checkButton.addEventListener('click', async () => {
-            const textToCheck = inputField.value.trim();
+    if (analyzeBtn) {
+        analyzeBtn.addEventListener('click', async () => {
+            const textToCheck = userInput.value.trim();
             
             if (!textToCheck) {
                 alert('Vänligen skriv eller klistra in något att kontrollera.');
                 return;
             }
 
-            resultContainer.innerHTML = 'Analyserat pågår...';
+            // Visa resultat-kortet och sätt laddningstext
+            resultCard.classList.remove('hidden');
+            resultDescription.textContent = 'Analyserar pågår...';
 
             try {
-                // Här anropas din publika Render-server istället för localhost
+                // Skickar förfrågan till din Render-server
                 const response = await fetch('https://kollad.onrender.com/api/check', {
                     method: 'POST',
                     headers: {
@@ -26,21 +28,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (!response.ok) {
-                    throw new Error('Ett fel uppstod vid anropet till servern.');
+                    throw new Error('Kunde inte nå servern.');
                 }
 
                 const data = await response.json();
                 
-                // Visar resultatet från servern/Gemini
-                resultContainer.innerHTML = `
-                    <div class="result-box">
-                        <h3>Resultat:</h3>
-                        <p>${data.result || data.message}</p>
-                    </div>
-                `;
+                // Visar svaret från servern/Gemini i gränssnittet
+                resultDescription.textContent = data.result || data.message || 'Analys klar.';
             } catch (error) {
                 console.error('Fel:', error);
-                resultContainer.innerHTML = '<p class="error">Kunde inte nå servern. Försök igen senare.</p>';
+                resultDescription.textContent = 'Kunde inte nå servern. Försök igen senare.';
             }
         });
     }
