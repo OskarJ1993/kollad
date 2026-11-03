@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kollad - Säkerhetsapp</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header med inställningsknapp -->
+        <header class="app-header">
+            <button class="settings-icon-btn" onclick="openSettings()" title="Inställningar">⚙️</button>
+            <img src="./assets/bilder/kollad-icon.png" alt="Kollad Logotyp" class="app-logo">
+            <p>Ditt digitala skydd mot bedrägerier</p>
+        </header>
+
+        <!-- Huvud-innehåll -->
+        <main class="app-main">
+            <!-- Universell inmatningsruta -->
+            <div class="input-card">
+                <textarea id="userInput" placeholder="Klistra in länk, SMS, chatt eller webbadress här..."></textarea>
+                <button id="analyzeBtn" class="primary-btn">
+                    <span class="btn-text">Analysera risk</span>
+                    <span class="spinner hidden"></span>
+                </button>
+            </div>
+
+            <!-- Snabbhistorik -->
+            <div id="historySection" class="history-section hidden">
+                <span class="history-label">Senaste kontroller:</span>
+                <div id="historyChips" class="history-chips"></div>
+            </div>
+
+            <!-- Resultat-ruta -->
+            <div id="resultCard" class="result-card hidden">
+                <div class="result-header">
+                    <span id="resultIcon" class="result-icon"></span>
+                    <h3 id="resultTitle">Resultat</h3>
+                </div>
+                <p id="resultDescription">Här visas analysen...</p>
+            </div>
+
+            <!-- ID-skydd & Dataläcka -->
+            <div class="id-leak-card">
+                <h3>🔍 ID-skydd & Dataläcka</h3>
+                <p class="leak-subtitle">Kontrollera om din e-postadress förekommer i kända dataläckor.</p>
+                <div class="leak-input-group">
+                    <input type="email" id="leakEmailInput" placeholder="din.epost@exempel.se">
+                    <button onclick="checkEmailLeak()" id="leakBtn" class="secondary-btn">Kolla läckor</button>
+                </div>
+                <div id="leakResultContainer" class="leak-result hidden"></div>
+            </div>
+
+            <!-- GUARD LIVE (Med På/Av switch och statistik-räknare) -->
+            <div class="guard-live-card" style="margin-top: 16px;">
+                <div class="guard-live-top">
+                    <div class="pulse-container" id="pulseContainer">
+                        <div class="pulse-circle"></div>
+                        <span class="pulse-dot"></span>
+                    </div>
+                    <div class="guard-live-titles">
+                        <h3>Guard Live</h3>
+                        <p class="live-subtitle" id="guardSubtitle">Realtidsskydd är avstängt</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="guardToggle" onchange="toggleGuardLive()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <!-- Statistik / Skydds-counter -->
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <span class="stat-number" id="blockedCount">0</span>
+                        <span class="stat-label">Blockerade hot</span>
+                    </div>
+                    <div class="live-status-box">
+                        <span class="status-indicator" id="statusIndicator"></span>
+                        <span id="statusText">Status: Avstängd</span>
+                    </div>
+                </div>
+
+                <div id="liveAlertModal" class="leak-result hidden" style="margin-top: 12px; background: rgba(255, 77, 77, 0.1); border-left: 4px solid #ff4d4d;">
+                    <h4 style="margin: 0 0 4px 0; color: #ff4d4d; font-size: 13px;">🚨 Varning: Potentiellt bedrägeri upptäckt!</h4>
+                    <p style="margin: 0 0 8px 0; font-size: 11px; color: #d0d0e0; line-height: 1.4;">
+                        Guard Live upptäckte en misstänkt länk i bakgrunden. Appen blockerar bedrägeriet och rekommenderar att du inte klickar på länken.
+                    </p>
+                    <button onclick="closeAlertModal()" class="secondary-btn" style="width: 100%; text-align: center;">Jag förstår, stäng</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- INSTÄLLNINGAR MODAL -->
+    <div id="settingsModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ Inställningar</h3>
+                <button class="close-modal-btn" onclick="closeSettings()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item">
+                    <span>Ljud vid varningar</span>
+                    <label class="switch">
+                        <input type="checkbox" id="settingSound" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span>Vibration vid hot</span>
+                    <label class="switch">
+                        <input type="checkbox" id="settingVibrate" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="setting-action">
+                    <button onclick="clearHistory()" class="danger-btn">Rensa sökhistorik</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <p class="app-version">Kollad v1.0.0 (Säkerhetsmotor aktiv)</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
