@@ -11,7 +11,7 @@ app.use(express.json());
 // Initiera Gemini API med miljövariabeln från Render
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// API-rutt för att analysera text
+// API-rutt för att analysera text och bedrägerier
 app.post('/api/check', async (req, res) => {
     try {
         const { text } = req.body;
@@ -20,7 +20,6 @@ app.post('/api/check', async (req, res) => {
             return res.status(400).json({ error: 'Ingen text angavs för analys.' });
         }
 
-        // Anropa Gemini med den modell som biblioteket efterfrågar
         const response = await ai.models.generateContent({
             model: 'gemini-3.8-flash',
             contents: `Analysera följande text och avgör om det är ett bedrägeri, nätfiske (phishing/smishing) eller en säker text. Ge en tydlig och kortfattad bedömning på svenska:\n\n"${text}"`,
@@ -32,6 +31,29 @@ app.post('/api/check', async (req, res) => {
     } catch (error) {
         console.error('Fel vid kommunikation med Gemini:', error);
         res.status(500).json({ error: 'Ett fel uppstod på servern vid analysen.' });
+    }
+});
+
+// API-rutt för att kontrollera e-postläckor
+app.post('/api/check-email', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Ingen e-postadress angavs.' });
+        }
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-3.8-flash',
+            contents: `Gör en säkerhetsanalys för e-postadressen "${email}" i samband med dataläckor. Svara kortfattat och professionellt på svenska om e-postadressen verkar säker eller om det finns risker.`,
+        });
+
+        const resultText = response.text || 'Ingen läcka hittades i våra register.';
+
+        res.json({ result: resultText });
+    } catch (error) {
+        console.error('Fel vid e-postkontroll:', error);
+        res.status(500).json({ error: 'Ett fel uppstod på servern vid e-postkontrollen.' });
     }
 });
 
