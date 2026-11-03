@@ -20,9 +20,9 @@ app.post('/api/check', async (req, res) => {
             return res.status(400).json({ error: 'Ingen text angavs för analys.' });
         }
 
-        // Anropa Gemini med en stabil modellversion
+        // Anropa Gemini med den modell som biblioteket efterfrågar
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-3.8-flash',
             contents: `Analysera följande text och avgör om det är ett bedrägeri, nätfiske (phishing/smishing) eller en säker text. Ge en tydlig och kortfattad bedömning på svenska:\n\n"${text}"`,
         });
 
