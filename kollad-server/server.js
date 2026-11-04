@@ -8,12 +8,14 @@ const { GoogleGenAI } = require('@google/genai');
 const app = express();
 
 // --- 1. CORS OCH MIDDLEWARE ---
-// Tillåter anrop från din frontend (ex. lokal utveckling eller Capacitor/webb)
+// VIKTIGT: Låt Express lita på Render som proxy (krävs för express-rate-limit)
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Initiera Gemini API (hämtar automatisk nyckel från miljövariabler process.env.GEMINI_API_KEY)
+// Initiera Gemini API (hämtar automatiskt nyckel från process.env.GEMINI_API_KEY)
 const ai = new GoogleGenAI();
 
 
@@ -74,9 +76,9 @@ app.post('/api/check', async (req, res) => {
         // Optimera texten (kapa till max 1000 tecken för att spara tokens)
         const trimmedText = textToAnalyze.length > 1000 ? textToAnalyze.substring(0, 1000) : textToAnalyze;
 
-        // Anropa Gemini med en effektiv modell och strukturerad prompt
+        // Anropa Gemini med den uppdaterade modellen
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: [
                 {
                     role: 'user',
@@ -118,7 +120,7 @@ app.post('/api/check', async (req, res) => {
 });
 
 
-// --- 4. EXEMPEL PÅ E-POSTKONTROLL (om du använder den) ---
+// --- 4. EXEMPEL PÅ E-POSTKONTROLL ---
 app.post('/api/check-email', async (req, res) => {
     try {
         const { email } = req.body;
@@ -126,7 +128,6 @@ app.post('/api/check-email', async (req, res) => {
             return res.status(400).json({ error: "E-postadress saknas." });
         }
         
-        // Här kan du lägga till din loggik för e-postläckor
         return res.json({ result: "Inga kända dataläckor hittades för denna e-postadress." });
     } catch (error) {
         return res.status(500).json({ error: "Kunde inte kontrollera e-post." });
