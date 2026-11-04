@@ -136,6 +136,3 @@ app.post('/api/check-email', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Kollad-servern körs på port ${PORT}`));
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Kollad-servern körs på port ${PORT}`));
