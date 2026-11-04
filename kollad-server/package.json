@@ -9,6 +9,7 @@
   "dependencies": {
     "@google/genai": "*",
     "cors": "latest",
-    "express": "latest"
+    "express": "latest",
+    "express-rate-limit": "^8.7.3"
   }
 }
