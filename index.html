@@ -19,90 +19,132 @@
     <div class="app-container">
         <!-- Header -->
         <header class="app-header">
-            <span class="header-back">Hem</span>
+            <span class="header-back" id="headerBackBtn" onclick="switchTab('home')">Hem</span>
             <div class="logo-area">
                 <img src="./assets/bilder/kollad-icon.png" alt="Kollad Logotyp" class="app-logo">
                 <h1>Kollad</h1>
             </div>
-            <p class="welcome-title">Välkommen tillbaka</p>
-            <p class="welcome-subtitle">Ditt digitalt skydd är aktivt.</p>
+            <p class="welcome-title" id="headerTitle">Välkommen tillbaka</p>
+            <p class="welcome-subtitle" id="headerSubtitle">Ditt digitala skydd är aktivt.</p>
         </header>
 
         <!-- Huvud-innehåll -->
         <main class="app-main">
-            <!-- Inmatningsruta -->
-            <div class="input-card">
-                <div class="input-wrapper">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" id="userInput" placeholder="Klistra in länk, domän eller e-postadress...">
-                </div>
-                <button id="analyzeBtn" class="primary-btn">
-                    <span class="btn-text">KOLLA</span>
-                    <span class="spinner hidden"></span>
-                </button>
-            </div>
-
-            <!-- Status / Guard Live -->
-            <div class="status-card active-guard">
-                <div class="status-top">
-                    <span class="status-dot-green"></span>
-                    <h3>Status</h3>
-                </div>
-                <p class="status-main-text">🛡️ Guard Live är aktivt.</p>
-                <div class="status-stats">
-                    <span class="stat-highlight">0</span> Blockerade hot idag
-                </div>
-            </div>
-
-            <!-- Senaste kontroller -->
-            <div class="history-card">
-                <div class="history-card-header">
-                    <span>🔍 Senaste kontroller</span>
-                </div>
-                <div class="history-list">
-                    <div class="history-item">
-                        <span class="item-text">🌐 bankid-support.se</span>
-                        <span class="badge-safe">Säker</span>
-                        <span class="dot-safe"></span>
+            
+            <!-- FLIK 1: HEM -->
+            <div id="tabHome" class="tab-content">
+                <!-- Inmatningsruta -->
+                <div class="input-card">
+                    <div class="input-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="userInput" placeholder="Klistra in länk, domän eller e-postadress...">
                     </div>
-                    <div class="history-item">
-                        <span class="item-text">🌐 swedbank-se.com</span>
-                        <span class="badge-danger">Falsk</span>
-                        <span class="dot-danger"></span>
+                    <button id="analyzeBtn" class="primary-btn">
+                        <span class="btn-text">KOLLA</span>
+                        <span class="spinner hidden"></span>
+                    </button>
+                </div>
+
+                <!-- Status / Snabb-Guard -->
+                <div class="status-card" id="homeStatusCard">
+                    <div class="status-top">
+                        <span class="status-dot-green" id="homeStatusDot"></span>
+                        <h3>Status</h3>
                     </div>
-                    <div class="history-item">
-                        <span class="item-text">✉️ info@klarna.com</span>
-                        <span class="badge-safe">Säker</span>
-                        <span class="dot-safe"></span>
+                    <p class="status-main-text" id="homeStatusText">🛡️ Guard Live är avstängt.</p>
+                    <div class="status-stats">
+                        <span class="stat-highlight" id="homeBlockedCount">0</span> Blockerade hot idag
                     </div>
                 </div>
+
+                <!-- Senaste kontroller (Kort vy) -->
+                <div class="history-card">
+                    <div class="history-card-header">
+                        <span>🔍 Senaste kontroller</span>
+                    </div>
+                    <div class="history-list" id="homeHistoryList">
+                        <div class="history-item">
+                            <span class="item-text" style="color: var(--text-secondary);">Inga tidigare sökningar</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resultat-ruta -->
+                <div id="resultCard" class="result-card hidden">
+                    <div class="result-header">
+                        <span id="resultIcon" class="result-icon"></span>
+                        <h3 id="resultTitle">Resultat</h3>
+                    </div>
+                    <p id="resultDescription">Här visas analysen...</p>
+                </div>
             </div>
 
-            <!-- Resultat-ruta (Dold som standard) -->
-            <div id="resultCard" class="result-card hidden">
-                <div class="result-header">
-                    <span id="resultIcon" class="result-icon"></span>
-                    <h3 id="resultTitle">Resultat</h3>
+            <!-- FLIK 2: GUARD LIVE -->
+            <div id="tabGuard" class="tab-content hidden">
+                <div class="guard-live-full-card">
+                    <div class="guard-live-top">
+                        <div class="pulse-container" id="pulseContainer">
+                            <div class="pulse-circle"></div>
+                            <span class="pulse-dot"></span>
+                        </div>
+                        <div class="guard-live-titles">
+                            <h3>Guard Live</h3>
+                            <p class="live-subtitle" id="guardSubtitle">Realtidsskydd är avstängt</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="guardToggle" onchange="toggleGuardLive()">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 10px; line-height: 1.4;">
+                        Guard Live övervakar aktiviteten i bakgrunden för att upptäcka och blockera misstänkta skadliga länkar och bedrägeriförsök automatiskt.
+                    </p>
+
+                    <!-- Statistik -->
+                    <div class="stats-row" style="margin-top: 14px;">
+                        <div class="stat-box">
+                            <span class="stat-number" id="blockedCount">0</span>
+                            <span class="stat-label">Blockerade hot</span>
+                        </div>
+                        <div class="live-status-box">
+                            <span class="status-indicator" id="statusIndicator"></span>
+                            <span id="statusText">Status: Avstängd</span>
+                        </div>
+                    </div>
                 </div>
-                <p id="resultDescription">Här visas analysen...</p>
             </div>
+
+            <!-- FLIK 3: VARNINGSHISTORIK -->
+            <div id="tabHistory" class="tab-content hidden">
+                <div class="history-card" style="min-height: 280px;">
+                    <div class="history-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>⚠️ Fullständig varningshistorik</span>
+                        <button onclick="clearHistory()" style="background: transparent; border: none; color: var(--danger-color); font-size: 11px; cursor: pointer;">Rensa</button>
+                    </div>
+                    <div class="history-list" id="fullHistoryList" style="margin-top: 8px;">
+                        <!-- Fylls på av JavaScript -->
+                    </div>
+                </div>
+            </div>
+
         </main>
 
         <!-- Bottenmeny (Navigation) -->
         <nav class="bottom-nav">
-            <button class="nav-item active">
+            <button class="nav-item active" id="navHome" onclick="switchTab('home')">
                 <span>🏠</span>
                 <small>Hem</small>
             </button>
-            <button class="nav-item" onclick="toggleGuardLiveTab()">
+            <button class="nav-item" id="navGuard" onclick="switchTab('guard')">
                 <span>🛡️</span>
                 <small>Guard</small>
             </button>
-            <button class="nav-item">
+            <button class="nav-item" id="navHistory" onclick="switchTab('history')">
                 <span>⚠️</span>
                 <small>Varningshistorik</small>
             </button>
-            <button class="nav-item" onclick="openSettings()">
+            <button class="nav-item" id="navSettings" onclick="openSettings()">
                 <span>⚙️</span>
                 <small>Inställningar</small>
             </button>
