@@ -9,6 +9,48 @@ function getUserId() {
     return userId;
 }
 
+// Hantera flikar (Navigation i bottenmenyn)
+window.switchTab = function(tabName) {
+    const tabHome = document.getElementById('tabHome');
+    const tabGuard = document.getElementById('tabGuard');
+    const tabHistory = document.getElementById('tabHistory');
+
+    const navHome = document.getElementById('navHome');
+    const navGuard = document.getElementById('navGuard');
+    const navHistory = document.getElementById('navHistory');
+
+    // Dölj alla flikar
+    if (tabHome) tabHome.classList.add('hidden');
+    if (tabGuard) tabGuard.classList.add('hidden');
+    if (tabHistory) tabHistory.classList.add('hidden');
+
+    // Ta bort active från alla nav-knappar
+    if (navHome) navHome.classList.remove('active');
+    if (navGuard) navGuard.classList.remove('active');
+    if (navHistory) navHistory.classList.remove('active');
+
+    const headerTitle = document.getElementById('headerTitle');
+    const headerSubtitle = document.getElementById('headerSubtitle');
+
+    if (tabName === 'home') {
+        if (tabHome) tabHome.classList.remove('hidden');
+        if (navHome) navHome.classList.add('active');
+        if (headerTitle) headerTitle.textContent = "Välkommen tillbaka";
+        if (headerSubtitle) headerSubtitle.textContent = "Ditt digitala skydd är aktivt.";
+    } else if (tabName === 'guard') {
+        if (tabGuard) tabGuard.classList.remove('hidden');
+        if (navGuard) navGuard.classList.add('active');
+        if (headerTitle) headerTitle.textContent = "Guard Live";
+        if (headerSubtitle) headerSubtitle.textContent = "Realtidsskydd i bakgrunden.";
+    } else if (tabName === 'history') {
+        if (tabHistory) tabHistory.classList.remove('hidden');
+        if (navHistory) navHistory.classList.add('active');
+        if (headerTitle) headerTitle.textContent = "Varningshistorik";
+        if (headerSubtitle) headerSubtitle.textContent = "Tidigare kontroller och hot.";
+        renderHistory(); // Uppdatera listan när man går hit
+    }
+}
+
 // Hantera statistik för blockerade hot
 function incrementBlockedCount() {
     let count = parseInt(localStorage.getItem('kollad_blocked_count') || '0', 10);
@@ -18,50 +60,128 @@ function incrementBlockedCount() {
 }
 
 function updateBlockedCountUI(count) {
-    const statHighlight = document.querySelector('.stat-highlight');
-    if (statHighlight) {
-        statHighlight.textContent = count;
-    }
+    const statHighlight = document.getElementById('homeBlockedCount');
+    const blockedCountEl = document.getElementById('blockedCount');
+    if (statHighlight) statHighlight.textContent = count;
+    if (blockedCountEl) blockedCountEl.textContent = count;
 }
 
-// Hantera sökhistorik och visa i listan
+// Hantera sökhistorik och rendera i listor
 function saveToHistory(text, riskLevel) {
     let history = JSON.parse(localStorage.getItem('kollad_history') || '[]');
-    // Undvik dubbletter och behåll de 3 senaste
-    history = [{ text, risk: riskLevel }, ...history.filter(item => item.text !== text)].slice(0, 3);
+    history = [{ text, risk: riskLevel, date: new Date().toLocaleDateString() }, ...history.filter(item => item.text !== text)].slice(0, 10);
     localStorage.setItem('kollad_history', JSON.stringify(history));
     renderHistory();
 }
 
 function renderHistory() {
-    const historyList = document.querySelector('.history-list');
+    const homeHistoryList = document.getElementById('homeHistoryList');
+    const fullHistoryList = document.getElementById('fullHistoryList');
     const history = JSON.parse(localStorage.getItem('kollad_history') || '[]');
 
-    if (!historyList) return;
+    // Rendera hemvyns korta lista (max 3)
+    if (homeHistoryList) {
+        if (history.length > 0) {
+            homeHistoryList.innerHTML = '';
+            history.slice(0, 3).forEach(item => {
+                const isSafe = item.risk && item.risk.toLowerCase().includes('låg');
+                const badgeClass = isSafe ? 'badge-safe' : 'badge-danger';
+                const dotClass = isSafe ? 'dot-safe' : 'dot-danger';
+                const badgeText = isSafe ? 'Säker' : 'Falsk';
 
-    if (history.length > 0) {
-        historyList.innerHTML = '';
-        history.forEach(item => {
-            const isSafe = item.risk && item.risk.toLowerCase().includes('låg');
-            const badgeClass = isSafe ? 'badge-safe' : 'badge-danger';
-            const dotClass = isSafe ? 'dot-safe' : 'dot-danger';
-            const badgeText = isSafe ? 'Säker' : 'Falsk';
-
-            const historyItem = document.createElement('div');
-            historyItem.className = 'history-item';
-            historyItem.innerHTML = `
-                <span class="item-text">🌐 ${item.text.length > 25 ? item.text.substring(0, 25) + '...' : item.text}</span>
-                <span class="${badgeClass}">${badgeText}</span>
-                <span class="${dotClass}"></span>
-            `;
-            historyItem.addEventListener('click', () => {
-                const userInput = document.getElementById('userInput');
-                if (userInput) {
-                    userInput.value = item.text;
-                }
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `
+                    <span class="item-text">🌐 ${item.text.length > 22 ? item.text.substring(0, 22) + '...' : item.text}</span>
+                    <span class="${badgeClass}">${badgeText}</span>
+                    <span class="${dotClass}"></span>
+                `;
+                div.addEventListener('click', () => {
+                    switchTab('home');
+                    const userInput = document.getElementById('userInput');
+                    if (userInput) userInput.value = item.text;
+                });
+                homeHistoryList.appendChild(div);
             });
-            historyList.appendChild(historyItem);
-        });
+        } else {
+            homeHistoryList.innerHTML = `<div class="history-item"><span class="item-text" style="color: var(--text-secondary);">Inga tidigare sökningar</span></div>`;
+        }
+    }
+
+    // Rendera fullständiga historik-fliken
+    if (fullHistoryList) {
+        if (history.length > 0) {
+            fullHistoryList.innerHTML = '';
+            history.forEach(item => {
+                const isSafe = item.risk && item.risk.toLowerCase().includes('låg');
+                const badgeClass = isSafe ? 'badge-safe' : 'badge-danger';
+                const dotClass = isSafe ? 'dot-safe' : 'dot-danger';
+                const badgeText = isSafe ? 'Säker' : 'Falsk';
+
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.style.marginBottom = '6px';
+                div.innerHTML = `
+                    <div>
+                        <span class="item-text" style="display: block; font-weight: 500;">🌐 ${item.text}</span>
+                        <small style="font-size: 9px; color: var(--text-secondary);">${item.date || ''}</small>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="${badgeClass}">${badgeText}</span>
+                        <span class="${dotClass}"></span>
+                    </div>
+                `;
+                fullHistoryList.appendChild(div);
+            });
+        } else {
+            fullHistoryList.innerHTML = `<p style="font-size: 12px; color: var(--text-secondary); text-align: center; padding: 20px;">Inga varningar eller kontroller sparade än.</p>`;
+        }
+    }
+}
+
+// Guard Live Toggle-funktion
+window.toggleGuardLive = function() {
+    const toggle = document.getElementById('guardToggle');
+    const subtitle = document.getElementById('guardSubtitle');
+    const statusText = document.getElementById('statusText');
+    const statusIndicator = document.getElementById('statusIndicator');
+    const guardCard = document.querySelector('.guard-live-full-card');
+    
+    // Hemvyns status
+    const homeStatusCard = document.getElementById('homeStatusCard');
+    const homeStatusDot = document.getElementById('homeStatusDot');
+    const homeStatusText = document.getElementById('homeStatusText');
+
+    if (toggle && toggle.checked) {
+        if (subtitle) subtitle.textContent = 'Realtidsskydd är aktivt';
+        if (statusText) statusText.textContent = 'Status: Aktiv';
+        if (statusIndicator) {
+            statusIndicator.style.backgroundColor = 'var(--success-color)';
+            statusIndicator.style.boxShadow = '0 0 8px var(--success-color)';
+        }
+        if (guardCard) guardCard.classList.add('active-guard');
+        
+        if (homeStatusCard) homeStatusCard.classList.add('active-guard');
+        if (homeStatusDot) {
+            homeStatusDot.style.backgroundColor = 'var(--success-color)';
+            homeStatusDot.style.boxShadow = '0 0 8px var(--success-color)';
+        }
+        if (homeStatusText) homeStatusText.textContent = '🛡️ Guard Live är aktivt.';
+    } else {
+        if (subtitle) subtitle.textContent = 'Realtidsskydd är avstängt';
+        if (statusText) statusText.textContent = 'Status: Avstängd';
+        if (statusIndicator) {
+            statusIndicator.style.backgroundColor = 'var(--text-secondary)';
+            statusIndicator.style.boxShadow = 'none';
+        }
+        if (guardCard) guardCard.classList.remove('active-guard');
+
+        if (homeStatusCard) homeStatusCard.classList.remove('active-guard');
+        if (homeStatusDot) {
+            homeStatusDot.style.backgroundColor = 'var(--danger-color)';
+            homeStatusDot.style.boxShadow = 'none';
+        }
+        if (homeStatusText) homeStatusText.textContent = '🛡️ Guard Live är avstängt.';
     }
 }
 
@@ -69,7 +189,6 @@ async function triggerSecurityAlert(reasonText) {
     const settingSound = document.getElementById('settingSound');
     const settingVibrate = document.getElementById('settingVibrate');
 
-    // Vibrera om inställningen är på
     if (settingVibrate && settingVibrate.checked && navigator.vibrate) {
         navigator.vibrate([200, 100, 200]);
     }
@@ -103,7 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultCard = document.getElementById('resultCard');
     const resultDescription = document.getElementById('resultDescription');
 
-    // Ladda sparad statistik och historik vid start
     const savedCount = parseInt(localStorage.getItem('kollad_blocked_count') || '0', 10);
     updateBlockedCountUI(savedCount);
     renderHistory();
@@ -123,9 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch('https://kollad.onrender.com/api/check', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         userId: getUserId(),
                         textToAnalyze: textToCheck 
@@ -172,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Globala funktioner för gränssnittet
+// Modal och inställningar
 window.openSettings = function() {
     const modal = document.getElementById('settingsModal');
     if (modal) modal.classList.remove('hidden');
@@ -181,10 +297,6 @@ window.openSettings = function() {
 window.closeSettings = function() {
     const modal = document.getElementById('settingsModal');
     if (modal) modal.classList.add('hidden');
-};
-
-window.toggleGuardLiveTab = function() {
-    alert("Guard Live-läget är aktivt i bakgrunden för att skydda dig mot skadliga länkar.");
 };
 
 window.clearHistory = function() {
