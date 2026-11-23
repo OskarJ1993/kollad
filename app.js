@@ -1,10 +1,15 @@
 let LocalNotifications = null;
-try {
-    const mod = await import('@capacitor/local-notifications');
-    LocalNotifications = mod.LocalNotifications;
-} catch (e) {
-    console.log('LocalNotifications ej tillgänglig i denna miljö:', e);
+
+async function initNotifications() {
+    try {
+        const mod = await import('@capacitor/local-notifications');
+        LocalNotifications = mod.LocalNotifications;
+    } catch (e) {
+        console.log('LocalNotifications ej tillgänglig i denna miljö:', e);
+    }
 }
+
+initNotifications();
 
 const DEFAULT_RADAR_ITEMS = [
     {
@@ -12,14 +17,28 @@ const DEFAULT_RADAR_ITEMS = [
         title: 'PostNord-paket',
         category: 'Leveransbluff',
         reports: 62,
-        sample: 'PostNord: Ditt paket har stoppats p.g.a. obetald tullavgift. Bekräfta här:'
+        sample: 'PostNord: Ditt paket har stoppats p.g.a. obetald tullavgift. Bekräfta här: http://postnord-leverans-se.com'
     },
     {
         id: 'bankid',
         title: 'BankID-inloggning',
         category: 'Kontokapning',
         reports: 68,
-        sample: 'Säkerhetsvarning: Ditt BankID behöver förnyas omgående via länken.'
+        sample: 'Säkerhetsvarning: Ditt BankID behöver förnyas omgående via länken. https://bankid-sakerhet-kontroll.se/logga-in'
+    },
+    {
+        id: 'cert-natfiske',
+        title: 'Falska mejl & inloggningssidor',
+        category: 'Nätfiske • CERT-SE',
+        reports: 'Aktuell varning',
+        sample: 'Hej, granska den delade fakturan och logga in här för att bekräfta ditt konto.'
+    },
+    {
+        id: 'fakturabluff',
+        title: 'Falska fakturor & påminnelser',
+        category: 'Fakturabluff',
+        reports: 34,
+        sample: 'Påminnelse: Obetald faktura med förseningsavgift. Öppna fakturan här för att undvika inkasso.'
     },
     {
         id: 'skatteverket',
@@ -65,7 +84,7 @@ function refreshIcons() {
     }
 }
 
-// Hopfällbar sektion för e-postläckor (utan tvångsfokus som zoomar/öppnar tangentbord direkt)
+// Hopfällbar sektion för e-postläckor
 window.toggleLeakSection = function() {
     const body = document.getElementById('leakSectionBody');
     const trigger = document.getElementById('toggleLeakBtn');
@@ -185,7 +204,7 @@ window.restorePurchases = function() {
     }
 };
 
-// Byt flik mellan Hem, Bluff-radar, Varningar och Akut-hjälp
+// Byt flik mellan Hem, Bluff-radar, Anhörig, Varningar och Akut-hjälp
 function switchTab(tabName) {
     const tabViews = document.querySelectorAll('.tab-view');
     tabViews.forEach(view => {
@@ -197,10 +216,294 @@ function switchTab(tabName) {
         btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
 
+    if (tabName === 'family') {
+        const homeVal = document.getElementById('userInput')?.value.trim() || '';
+        const relInput = document.getElementById('relativeQuestionInput');
+        if (relInput && !relInput.value.trim() && homeVal) {
+            relInput.value = homeVal;
+        }
+        renderRelativeContact();
+        renderFamilyGroup();
+    }
+
     refreshIcons();
 }
 
 window.switchTab = switchTab;
+
+// Anhörig-kontakt & Fråga anhörig
+function getRelativeContact() {
+    try {
+        return JSON.parse(localStorage.getItem('kollad_relative_contact') || 'null');
+    } catch (e) {
+        return null;
+    }
+}
+
+function renderRelativeContact() {
+    const contact = getRelativeContact();
+    const card = document.getElementById('savedRelativeCard');
+    const form = document.getElementById('relativeSetupForm');
+    const nameEl = document.getElementById('savedRelativeName');
+    const phoneEl = document.getElementById('savedRelativePhone');
+    const callLink = document.getElementById('callRelativeLink');
+
+    if (contact && contact.name) {
+        card?.classList.remove('hidden');
+        form?.classList.add('hidden');
+        if (nameEl) nameEl.textContent = contact.name;
+        if (phoneEl) phoneEl.textContent = contact.phone || 'Inget nummer sparat';
+        if (callLink) {
+            if (contact.phone) {
+                callLink.href = `tel:${contact.phone.replace(/\s+/g, '')}`;
+                callLink.classList.remove('hidden');
+            } else {
+                callLink.classList.add('hidden');
+            }
+        }
+    } else {
+        card?.classList.add('hidden');
+        form?.classList.remove('hidden');
+    }
+    refreshIcons();
+}
+
+window.saveRelativeContact = function() {
+    const name = document.getElementById('relativeNameInput')?.value.trim() || '';
+    const phone = document.getElementById('relativePhoneInput')?.value.trim() || '';
+
+    if (!name) {
+        showToast('Skriv in namn på din anhöriga först.');
+        return;
+    }
+
+    localStorage.setItem('kollad_relative_contact', JSON.stringify({ name, phone }));
+    renderRelativeContact();
+    showToast(`Sparade ${name} som trygghetskontakt.`);
+};
+
+window.editRelativeContact = function() {
+    const contact = getRelativeContact();
+    const nameInput = document.getElementById('relativeNameInput');
+    const phoneInput = document.getElementById('relativePhoneInput');
+    if (nameInput && contact) nameInput.value = contact.name || '';
+    if (phoneInput && contact) phoneInput.value = contact.phone || '';
+
+    document.getElementById('savedRelativeCard')?.classList.add('hidden');
+    document.getElementById('relativeSetupForm')?.classList.remove('hidden');
+};
+
+window.sendToRelative = async function() {
+    const contact = getRelativeContact();
+    const customQuestion = document.getElementById('relativeQuestionInput')?.value.trim() || '';
+    const homeInput = document.getElementById('userInput')?.value.trim() || '';
+    const content = customQuestion || homeInput;
+
+    const message = content
+        ? `Hej${contact?.name ? ' ' + contact.name.split(' ')[0] : ''}! Kan du hjälpa mig kolla om det här är säkert innan jag klickar?\n\n"${content}"${lastCheckedSummary ? '\n\nKollad-analys: ' + lastCheckedSummary : ''}`
+        : `Hej${contact?.name ? ' ' + contact.name.split(' ')[0] : ''}! Jag har fått ett misstänkt meddelande och vill dubbelkolla med dig innan jag gör något.`;
+
+    // Om telefonnummer finns sparat, öppna SMS direkt på mobilen
+    if (contact && contact.phone) {
+        const cleanPhone = contact.phone.replace(/\s+/g, '');
+        const sep = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? '&' : '?';
+        window.location.href = `sms:${cleanPhone}${sep}body=${encodeURIComponent(message)}`;
+        return;
+    }
+
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Kollad – Fråga en anhörig',
+                text: message
+            });
+            return;
+        } catch (e) {
+            if (e?.name === 'AbortError') return;
+        }
+    }
+
+    try {
+        await navigator.clipboard.writeText(message);
+        showToast('Meddelande kopierat – klistra in i SMS eller chatt.');
+    } catch (e) {
+        showToast('Kunde inte öppna delning automatiskt.');
+    }
+};
+
+// Familjegrupp (förberedd för server-synk + lokal historik)
+function getFamilyGroup() {
+    try {
+        return JSON.parse(localStorage.getItem('kollad_family_group') || 'null');
+    } catch (e) {
+        return null;
+    }
+}
+
+function saveFamilyGroup(group) {
+    localStorage.setItem('kollad_family_group', JSON.stringify(group));
+    renderFamilyGroup();
+}
+
+function renderFamilyGroup() {
+    const group = getFamilyGroup();
+    const joinCreateView = document.getElementById('groupJoinOrCreateView');
+    const activeView = document.getElementById('groupActiveView');
+    const statusPill = document.getElementById('groupStatusPill');
+    const nameEl = document.getElementById('activeGroupName');
+    const codeEl = document.getElementById('activeGroupCode');
+    const shareToggle = document.getElementById('shareWarningsToggle');
+    const feedList = document.getElementById('groupFeedList');
+
+    if (!group) {
+        joinCreateView?.classList.remove('hidden');
+        activeView?.classList.add('hidden');
+        if (statusPill) statusPill.textContent = 'REDO';
+        return;
+    }
+
+    joinCreateView?.classList.add('hidden');
+    activeView?.classList.remove('hidden');
+    if (statusPill) statusPill.textContent = 'AKTIV';
+    if (nameEl) nameEl.textContent = group.name;
+    if (codeEl) codeEl.textContent = group.code;
+    if (shareToggle) shareToggle.checked = group.shareWarnings !== false;
+
+    if (feedList) {
+        feedList.innerHTML = '';
+        const events = Array.isArray(group.events) ? group.events : [];
+        if (events.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'history-item';
+            const span = document.createElement('span');
+            span.className = 'item-text';
+            span.style.color = 'var(--text-secondary)';
+            span.textContent = 'Inga delade varningar i gruppen ännu.';
+            empty.appendChild(span);
+            feedList.appendChild(empty);
+        } else {
+            events.forEach(ev => {
+                const row = document.createElement('div');
+                row.className = 'history-item';
+                row.style.flexDirection = 'column';
+                row.style.alignItems = 'flex-start';
+                row.style.gap = '4px';
+
+                const top = document.createElement('div');
+                top.style.display = 'flex';
+                top.style.justifyContent = 'space-between';
+                top.style.width = '100%';
+                top.style.gap = '8px';
+
+                const titleEl = document.createElement('span');
+                titleEl.className = 'item-text';
+                titleEl.style.fontWeight = '600';
+                titleEl.textContent = ev.text;
+
+                const badge = document.createElement('span');
+                badge.className = 'badge-danger';
+                badge.textContent = ev.member || 'Varning';
+
+                top.append(titleEl, badge);
+
+                const meta = document.createElement('small');
+                meta.className = 'radar-subtext';
+                meta.textContent = `${ev.date} • ${ev.reason}`;
+
+                row.append(top, meta);
+                feedList.appendChild(row);
+            });
+        }
+    }
+    refreshIcons();
+}
+
+window.createFamilyGroup = function() {
+    const name = document.getElementById('groupNameInput')?.value.trim() || 'Min familjegrupp';
+    const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    const code = `KOLLAD-${randomDigits}`;
+
+    saveFamilyGroup({
+        name,
+        code,
+        shareWarnings: true,
+        events: []
+    });
+    showToast(`Familjegruppen "${name}" skapades!`);
+};
+
+window.joinFamilyGroup = function() {
+    const rawCode = document.getElementById('joinCodeInput')?.value.trim().toUpperCase() || '';
+    if (!rawCode) {
+        showToast('Skriv in en inbjudningskod först.');
+        return;
+    }
+
+    const code = rawCode.startsWith('KOLLAD-') ? rawCode : `KOLLAD-${rawCode}`;
+    saveFamilyGroup({
+        name: 'Familjegrupp',
+        code,
+        shareWarnings: true,
+        events: []
+    });
+    showToast(`Ansluten till grupp ${code}!`);
+};
+
+window.shareGroupInvite = async function() {
+    const group = getFamilyGroup();
+    if (!group) return;
+
+    const inviteText = `Gå med i vår trygghetsgrupp "${group.name}" i appen Kollad så vi kan hjälpas åt mot bedrägerier.\nInbjudningskod: ${group.code}`;
+
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Inbjudan till Kollad Familjegrupp',
+                text: inviteText
+            });
+            return;
+        } catch (e) {
+            if (e?.name === 'AbortError') return;
+        }
+    }
+
+    try {
+        await navigator.clipboard.writeText(inviteText);
+        showToast(`Inbjudningskod ${group.code} kopierad!`);
+    } catch (e) {
+        showToast(`Din gruppkod är: ${group.code}`);
+    }
+};
+
+window.toggleGroupWarningSync = function() {
+    const group = getFamilyGroup();
+    if (!group) return;
+    const toggle = document.getElementById('shareWarningsToggle');
+    group.shareWarnings = !!(toggle && toggle.checked);
+    saveFamilyGroup(group);
+    showToast(group.shareWarnings ? 'Varningar delas med gruppen.' : 'Delning med gruppen pausad.');
+};
+
+window.leaveFamilyGroup = function() {
+    localStorage.removeItem('kollad_family_group');
+    renderFamilyGroup();
+    showToast('Du har lämnat familjegruppen.');
+};
+
+function pushWarningToFamilyGroup(text, reason) {
+    const group = getFamilyGroup();
+    if (!group || group.shareWarnings === false) return;
+
+    const events = Array.isArray(group.events) ? group.events : [];
+    events.unshift({
+        member: 'Du',
+        text: text.length > 42 ? text.slice(0, 42) + '...' : text,
+        reason: reason || 'Hög risk upptäckt',
+        date: new Date().toLocaleDateString('sv-SE')
+    });
+    group.events = events.slice(0, 15);
+    saveFamilyGroup(group);
+}
 
 // Bluff-radarn logik
 function detectScamCategory(text) {
@@ -211,8 +514,14 @@ function detectScamCategory(text) {
     if (lower.includes('bankid') || lower.includes('bank') || lower.includes('swedbank') || lower.includes('nordea')) {
         return { id: 'bankid', title: 'BankID-inloggning', category: 'Kontokapning' };
     }
+    if (lower.includes('faktura') || lower.includes('inkasso') || lower.includes('betalning')) {
+        return { id: 'fakturabluff', title: 'Falska fakturor & påminnelser', category: 'Fakturabluff' };
+    }
     if (lower.includes('skatteverket') || lower.includes('kivra') || lower.includes('återbäring')) {
         return { id: 'skatteverket', title: 'Skatteåterbäring', category: 'Myndighetsbluff' };
+    }
+    if (lower.includes('konto') || lower.includes('logga in') || lower.includes('mejl') || lower.includes('delad')) {
+        return { id: 'cert-natfiske', title: 'Falska mejl & inloggningssidor', category: 'Nätfiske • CERT-SE' };
     }
     return {
         id: 'custom_' + lower.replace(/[^a-z0-9]/g, '').slice(0, 12),
@@ -221,14 +530,37 @@ function detectScamCategory(text) {
     };
 }
 
+function getMergedRadarItems() {
+    let saved = [];
+    try {
+        const parsed = JSON.parse(localStorage.getItem('kollad_radar') || '[]');
+        if (Array.isArray(parsed)) saved = parsed;
+    } catch (e) {
+        saved = [];
+    }
+
+    const mergedMap = new Map();
+    DEFAULT_RADAR_ITEMS.forEach(item => mergedMap.set(item.id, { ...item }));
+    saved.forEach(item => {
+        if (item && item.id) {
+            mergedMap.set(item.id, { ...mergedMap.get(item.id), ...item });
+        }
+    });
+
+    return Array.from(mergedMap.values());
+}
+
 function updateLocalRadar(text) {
-    const saved = JSON.parse(localStorage.getItem('kollad_radar') || 'null');
-    const radar = Array.isArray(saved) && saved.length > 0 ? [...saved] : [...DEFAULT_RADAR_ITEMS];
+    const radar = getMergedRadarItems();
     const matchInfo = detectScamCategory(text);
 
     const existing = radar.find(item => item.id === matchInfo.id);
     if (existing) {
-        existing.reports += 1;
+        if (typeof existing.reports === 'number') {
+            existing.reports += 1;
+        } else {
+            existing.reports = 'Flera nya rapporter';
+        }
         existing.sample = text;
     } else {
         radar.unshift({
@@ -238,10 +570,22 @@ function updateLocalRadar(text) {
         });
     }
 
-    radar.sort((a, b) => b.reports - a.reports);
+    radar.sort((a, b) => {
+        const aNum = typeof a.reports === 'number' ? a.reports : 999;
+        const bNum = typeof b.reports === 'number' ? b.reports : 999;
+        return bNum - aNum;
+    });
+
     const trimmed = radar.slice(0, 8);
     localStorage.setItem('kollad_radar', JSON.stringify(trimmed));
     renderScamRadar(trimmed);
+}
+
+function formatRadarMeta(item) {
+    if (typeof item.reports === 'number') {
+        return `${item.reports} rapporter • ${item.category}`;
+    }
+    return `${item.reports} • ${item.category}`;
 }
 
 function renderScamRadar(items) {
@@ -264,7 +608,7 @@ function renderScamRadar(items) {
 
         const subEl = document.createElement('small');
         subEl.className = 'radar-subtext';
-        subEl.textContent = `${item.reports} rapporter • ${item.category}`;
+        subEl.textContent = formatRadarMeta(item);
 
         left.append(titleEl, subEl);
 
@@ -294,8 +638,8 @@ function renderScamRadar(items) {
 }
 
 function loadScamRadar() {
-    const saved = JSON.parse(localStorage.getItem('kollad_radar') || 'null');
-    const items = Array.isArray(saved) && saved.length > 0 ? saved : DEFAULT_RADAR_ITEMS;
+    const items = getMergedRadarItems();
+    localStorage.setItem('kollad_radar', JSON.stringify(items));
     renderScamRadar(items);
 }
 
@@ -657,28 +1001,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const askRelativeBtn = document.getElementById('askRelativeBtn');
     if (askRelativeBtn) {
-        askRelativeBtn.addEventListener('click', async () => {
-            const inputVal = document.getElementById('userInput')?.value.trim() || '';
-            const shareMessage = `Kan du kika på det här i Kollad innan jag klickar?\nInmatning: ${inputVal}\nAnalys: ${lastCheckedSummary}`;
-
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: 'Kollad – Fråga en anhörig',
-                        text: shareMessage
-                    });
-                    return;
-                } catch (e) {
-                    if (e?.name === 'AbortError') return;
-                }
-            }
-
-            try {
-                await navigator.clipboard.writeText(shareMessage);
-                showToast('Sammanfattning kopierad – klistra in i SMS eller chatt till anhörig.');
-            } catch (e) {
-                showToast('Kunde inte dela automatiskt.');
-            }
+        askRelativeBtn.addEventListener('click', () => {
+            switchTab('family');
         });
     }
 
@@ -699,6 +1023,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderHistory();
     renderWarnings();
     loadScamRadar();
+    renderRelativeContact();
+    renderFamilyGroup();
 
     if (analyzeBtn) {
         analyzeBtn.addEventListener('click', async () => {
@@ -765,6 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         triggerSecurityAlert(data.result.reason);
                         saveToWarnings(textToCheck, data.result.reason);
                         updateLocalRadar(textToCheck);
+                        pushWarningToFamilyGroup(textToCheck, data.result.reason);
                     }
                 }
 
