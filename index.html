@@ -21,7 +21,7 @@
       }
     </script>
 
-    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./www/style.css">
 </head>
 <body>
     <div id="toastBanner" class="toast-banner hidden" role="status" aria-live="polite"></div>
@@ -192,7 +192,134 @@
                 </div>
             </div>
 
-            <!-- FLIK 3: VARNINGSHISTORIK -->
+            <!-- FLIK 3: ANHÖRIG & FAMILJEGRUPP -->
+            <div id="tab-family" class="tab-view hidden">
+                <!-- Del 1: Fråga en anhörig -->
+                <div class="input-card">
+                    <div class="input-guide">
+                        <div class="input-guide-header">
+                            <i data-lucide="heart-handshake" class="input-guide-icon"></i>
+                            <span>Fråga en anhörig</span>
+                        </div>
+                        <p class="input-guide-text">
+                            Osäker på ett SMS, mejl eller samtal? Skicka det till någon du litar på innan du klickar.
+                        </p>
+                    </div>
+
+                    <div id="savedRelativeCard" class="relative-contact-card hidden">
+                        <div class="relative-contact-info">
+                            <strong id="savedRelativeName">Anna (Dotter)</strong>
+                            <small id="savedRelativePhone">070-123 45 67</small>
+                        </div>
+                        <div class="relative-contact-btns">
+                            <a id="callRelativeLink" href="tel:" class="secondary-action-btn">
+                                <i data-lucide="phone"></i> Ring
+                            </a>
+                            <button type="button" class="paste-btn" onclick="editRelativeContact()" title="Ändra kontakt">
+                                <i data-lucide="pencil"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="relativeSetupForm" class="relative-form">
+                        <div class="input-wrapper">
+                            <i data-lucide="user" class="input-icon"></i>
+                            <input type="text" id="relativeNameInput" placeholder="Namn, t.ex. Anna (Dotter)">
+                        </div>
+                        <div class="input-wrapper">
+                            <i data-lucide="phone" class="input-icon"></i>
+                            <input type="tel" id="relativePhoneInput" placeholder="Mobilnummer, t.ex. 0701234567">
+                        </div>
+                        <button type="button" onclick="saveRelativeContact()" class="secondary-action-btn" style="width: 100%; padding: 10px;">
+                            <i data-lucide="check"></i> SPARA TRYGGHETSKONTAKT
+                        </button>
+                    </div>
+
+                    <div class="input-wrapper">
+                        <i data-lucide="message-square" class="input-icon"></i>
+                        <input type="text" id="relativeQuestionInput" placeholder="Skriv eller klistra in det du vill fråga om...">
+                    </div>
+
+                    <button type="button" onclick="sendToRelative()" class="primary-btn">
+                        <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+                        <span class="btn-text">SKICKA TILL ANHÖRIG</span>
+                    </button>
+                </div>
+
+                <!-- Del 2: Familjegrupp -->
+                <div class="history-card">
+                    <div class="status-top">
+                        <div class="history-card-header">
+                            <i data-lucide="users" class="header-icon" style="color: var(--accent-color);"></i>
+                            <span>Familje- & trygghetsgrupp</span>
+                        </div>
+                        <span id="groupStatusPill" class="live-pill">REDO</span>
+                    </div>
+
+                    <!-- Vy när man ännu inte är med i en grupp -->
+                    <div id="groupJoinOrCreateView" class="group-box">
+                        <p class="input-guide-text">
+                            Bjud in familjen med en enkel kod så kan ni se varandras bluffvarningar och hjälpas åt direkt.
+                        </p>
+                        <div class="input-wrapper">
+                            <i data-lucide="shield" class="input-icon"></i>
+                            <input type="text" id="groupNameInput" placeholder="Gruppnamn, t.ex. Familjen Johansson">
+                        </div>
+                        <button type="button" onclick="createFamilyGroup()" class="secondary-action-btn" style="width: 100%; padding: 11px;">
+                            <i data-lucide="plus-circle"></i> SKAPA FAMILJEGRUPP
+                        </button>
+
+                        <div class="group-divider"><span>eller gå med med kod</span></div>
+
+                        <div class="group-join-row">
+                            <div class="input-wrapper" style="flex: 1;">
+                                <i data-lucide="key-round" class="input-icon"></i>
+                                <input type="text" id="joinCodeInput" placeholder="Kod, t.ex. KOLLAD-4821">
+                            </div>
+                            <button type="button" onclick="joinFamilyGroup()" class="secondary-action-btn" style="padding: 11px 14px;">
+                                Gå med
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Vy när man är aktiv i en grupp -->
+                    <div id="groupActiveView" class="group-box hidden">
+                        <div class="group-header-card">
+                            <div>
+                                <strong id="activeGroupName" class="item-text" style="font-size: 13.5px;">Familjen</strong>
+                                <div class="group-code-row">
+                                    <small class="radar-subtext">Inbjudningskod: <strong id="activeGroupCode" style="color: var(--accent-color);">KOLLAD-0000</strong></small>
+                                </div>
+                            </div>
+                            <button type="button" onclick="shareGroupInvite()" class="secondary-action-btn">
+                                <i data-lucide="share-2"></i> Bjud in
+                            </button>
+                        </div>
+
+                        <div class="setting-item" style="padding: 2px 0;">
+                            <span style="font-size: 12px; color: var(--text-secondary);">Dela mina varningar med gruppen</span>
+                            <label class="switch">
+                                <input type="checkbox" id="shareWarningsToggle" checked onchange="toggleGroupWarningSync()">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+
+                        <div class="history-card-header" style="margin-top: 2px;">
+                            <i data-lucide="bell-ring" class="header-icon"></i>
+                            <span>Varningar i gruppen</span>
+                        </div>
+                        <div class="history-list" id="groupFeedList">
+                            <!-- Fylls på av app.js -->
+                        </div>
+
+                        <button type="button" onclick="leaveFamilyGroup()" class="danger-btn" style="margin-top: 2px;">
+                            <i data-lucide="log-out"></i> Lämna gruppen
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FLIK 4: VARNINGSHISTORIK -->
             <div id="tab-warnings" class="tab-view hidden">
                 <div class="history-card">
                     <div class="status-top">
@@ -212,7 +339,7 @@
                 </div>
             </div>
 
-            <!-- FLIK 4: AKUT-HJÄLPEN -->
+            <!-- FLIK 5: AKUT-HJÄLPEN -->
             <div id="tab-emergency" class="tab-view hidden">
                 <div class="history-card emergency-card">
                     <div class="status-top">
@@ -243,7 +370,7 @@
 
         </main>
 
-        <!-- Fast bottenmeny (4 tydliga flikar) -->
+        <!-- Fast bottenmeny (5 korta och tydliga flikar) -->
         <div class="bottom-dock">
             <nav class="bottom-nav">
                 <button class="nav-item active" data-tab="home" onclick="switchTab('home')">
@@ -253,6 +380,10 @@
                 <button class="nav-item" data-tab="radar" onclick="switchTab('radar')">
                     <i data-lucide="radar"></i>
                     <small>Bluff-radar</small>
+                </button>
+                <button class="nav-item" data-tab="family" onclick="switchTab('family')">
+                    <i data-lucide="users"></i>
+                    <small>Anhörig</small>
                 </button>
                 <button class="nav-item" data-tab="warnings" onclick="switchTab('warnings')">
                     <i data-lucide="alert-triangle"></i>
@@ -265,7 +396,7 @@
             </nav>
 
             <div class="app-footer-info">
-                <small>Kollad v1.6.0 • Din säkerhetsvakt</small>
+                <small>Kollad v1.7.0 • Din säkerhetsvakt</small>
             </div>
         </div>
     </div>
@@ -343,8 +474,8 @@
                 <ul class="pro-feature-list">
                     <li><i data-lucide="check-circle-2"></i> <strong>Obegränsade kontroller</strong> av länkar, SMS och mejl</li>
                     <li><i data-lucide="check-circle-2"></i> <strong>Guard Live</strong> med realtidsvarningar och ljud/vibration</li>
+                    <li><i data-lucide="check-circle-2"></i> <strong>Familjegrupp i realtid</strong> med delade varningar</li>
                     <li><i data-lucide="check-circle-2"></i> <strong>Obegränsad koll av dataläckor</strong> för dina e-postadresser</li>
-                    <li><i data-lucide="check-circle-2"></i> <strong>Prioriterade varningar</strong> från Bluff-radarn i Sverige</li>
                 </ul>
 
                 <div class="pro-pricing-box">
