@@ -65,7 +65,7 @@ function refreshIcons() {
     }
 }
 
-// Hopfällbar sektion för e-postläckor
+// Hopfällbar sektion för e-postläckor (utan tvångsfokus som zoomar/öppnar tangentbord direkt)
 window.toggleLeakSection = function() {
     const body = document.getElementById('leakSectionBody');
     const trigger = document.getElementById('toggleLeakBtn');
@@ -76,10 +76,6 @@ window.toggleLeakSection = function() {
     body.classList.toggle('hidden', !willOpen);
     if (trigger) trigger.setAttribute('aria-expanded', String(willOpen));
     if (chevron) chevron.classList.toggle('rotated', willOpen);
-
-    if (willOpen) {
-        document.getElementById('leakEmailInput')?.focus();
-    }
 };
 
 // PRO & 7-dagars testperiod
@@ -286,7 +282,6 @@ function renderScamRadar(items) {
             const input = document.getElementById('userInput');
             if (input) {
                 input.value = item.sample || item.title;
-                input.focus();
             }
             switchTab('home');
             showToast('Exempel ifyllt – tryck KOLLA för att analysera.');
@@ -407,7 +402,6 @@ function renderHistory() {
                     const input = document.getElementById('userInput');
                     if (input) {
                         input.value = text;
-                        input.focus();
                     }
                     showToast('Vald post placerad i sökfältet.');
                 });
@@ -612,7 +606,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const input = document.getElementById('userInput');
             if (input) {
                 input.value = chip.dataset.sample || '';
-                input.focus();
             }
             showToast('Exempel ifyllt – tryck KOLLA för att testa.');
         });
@@ -651,7 +644,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const input = document.getElementById('userInput');
                 if (input && text) {
                     input.value = text;
-                    input.focus();
                     showToast('Inklistrat från urklipp.');
                 } else {
                     showToast('Urklippet är tomt.');
