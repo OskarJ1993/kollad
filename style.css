@@ -473,6 +473,70 @@ body {
     transform: scale(0.98);
 }
 
+/* Anhörig & Familjegrupp */
+.relative-form,
+.group-box {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.relative-contact-card,
+.group-header-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    background: rgba(4, 7, 15, 0.48);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 10px 12px;
+}
+
+.relative-contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.relative-contact-info strong {
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.relative-contact-info small {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+}
+
+.relative-contact-btns {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.group-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 11px;
+    gap: 8px;
+}
+
+.group-divider::before,
+.group-divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.group-join-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* Hopfällbart kort för e-postläckor */
 .collapsible-card {
     padding: 0;
@@ -789,13 +853,13 @@ body {
     font-size: 11px;
 }
 
-/* Fast bottenmeny (sticky längst ner på skärmen, alla mobiler) */
+/* Fast bottenmeny (5 tydliga flikar) */
 .bottom-dock {
     position: sticky;
     bottom: 0;
     z-index: 50;
     margin: auto -16px 0;
-    padding: 8px 16px calc(10px + env(safe-area-inset-bottom));
+    padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
     background: linear-gradient(to top, rgba(9, 14, 28, 0.98) 78%, rgba(9, 14, 28, 0.85) 100%);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -808,19 +872,19 @@ body {
 
 .bottom-nav {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     background: rgba(4, 7, 15, 0.7);
     border: 1px solid var(--card-border);
     border-radius: 16px;
     padding: 4px;
-    gap: 4px;
+    gap: 2px;
 }
 
 .nav-item {
     background: transparent;
     border: none;
     border-radius: 12px;
-    padding: 8px 4px;
+    padding: 8px 2px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -831,8 +895,8 @@ body {
 }
 
 .nav-item svg {
-    width: 19px;
-    height: 19px;
+    width: 18px;
+    height: 18px;
 }
 
 .nav-item.active {
@@ -855,9 +919,9 @@ body {
 }
 
 .nav-item small {
-    font-size: 10.5px;
+    font-size: 9.5px;
     font-weight: 600;
-    letter-spacing: -0.1px;
+    letter-spacing: -0.2px;
     white-space: nowrap;
 }
 
@@ -1172,7 +1236,7 @@ input:checked + .slider:before {
 }
 
 .app-container.large-text .nav-item small {
-    font-size: 11.5px;
+    font-size: 10.5px;
 }
 
 /* Spinner & Animationer */
