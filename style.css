@@ -1,3 +1,4 @@
+
 :root {
     --bg-color: #04070f;
     --card-bg: rgba(15, 23, 42, 0.78);
@@ -29,23 +30,21 @@ body {
         radial-gradient(circle at 80% 90%, rgba(37, 99, 235, 0.06) 0%, transparent 50%);
     color: var(--text-primary);
     min-height: 100dvh;
-    display: flex;
-    justify-content: center;
-    align-items: stretch;
-    padding: 10px;
+    margin: 0;
+    padding: 0;
 }
 
 .app-container {
     width: 100%;
-    max-width: 410px;
-    min-height: calc(100dvh - 20px);
+    max-width: 100%;
+    min-height: 100dvh;
     background: var(--card-bg);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid var(--card-border);
-    border-radius: 30px;
-    padding: 16px 16px 0;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 0;
+    padding: calc(14px + env(safe-area-inset-top)) 16px 0;
+    box-shadow: none;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -789,7 +788,7 @@ body {
     font-size: 11px;
 }
 
-/* Fast bottenmeny (sticky längst ner på skärmen) */
+/* Fast bottenmeny (sticky längst ner på skärmen, alla mobiler) */
 .bottom-dock {
     position: sticky;
     bottom: 0;
@@ -800,8 +799,7 @@ body {
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     border-top: 1px solid rgba(255, 255, 255, 0.07);
-    border-bottom-left-radius: 30px;
-    border-bottom-right-radius: 30px;
+    border-radius: 0;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -1012,7 +1010,7 @@ input:checked + .slider:before {
 /* Toast-meddelande */
 .toast-banner {
     position: fixed;
-    top: 18px;
+    top: calc(14px + env(safe-area-inset-top));
     left: 50%;
     transform: translateX(-50%);
     background: rgba(15, 23, 42, 0.96);
