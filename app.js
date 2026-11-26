@@ -11,6 +11,8 @@ async function initNotifications() {
 
 initNotifications();
 
+const API_BASE = 'https://kollad.onrender.com';
+
 const DEFAULT_RADAR_ITEMS = [
     {
         id: 'postnord',
@@ -53,6 +55,7 @@ const TRIAL_DAYS = 7;
 
 let toastTimeout = null;
 let lastCheckedSummary = '';
+let groupPollTimer = null;
 
 function showToast(message) {
     const banner = document.getElementById('toastBanner');
@@ -82,6 +85,32 @@ function refreshIcons() {
     if (window.lucide && typeof window.lucide.createIcons === 'function') {
         window.lucide.createIcons();
     }
+}
+
+// Tar emot delad text/länk via URL-parametrar (redo för iOS/Android Share Target)
+function handleIncomingShare() {
+    const params = new URLSearchParams(window.location.search);
+    const sharedText =
+        params.get('share') ||
+        params.get('text') ||
+        params.get('url') ||
+        params.get('q');
+
+    if (!sharedText) return;
+
+    const cleanText = sharedText.trim();
+    if (!cleanText) return;
+
+    switchTab('home');
+    const input = document.getElementById('userInput');
+    if (input) {
+        input.value = cleanText;
+    }
+
+    const cleanUrl = window.location.origin + window.location.pathname;
+    window.history.replaceState({}, document.title, cleanUrl);
+
+    showToast('Delat innehåll mottaget – tryck KOLLA för att analysera.');
 }
 
 // Hopfällbar sektion för e-postläckor
@@ -204,6 +233,22 @@ window.restorePurchases = function() {
     }
 };
 
+function startGroupPolling() {
+    stopGroupPolling();
+    groupPollTimer = setInterval(() => {
+        if (!document.hidden) {
+            syncFamilyGroupFromServer();
+        }
+    }, 15000);
+}
+
+function stopGroupPolling() {
+    if (groupPollTimer) {
+        clearInterval(groupPollTimer);
+        groupPollTimer = null;
+    }
+}
+
 // Byt flik mellan Hem, Bluff-radar, Anhörig, Varningar och Akut-hjälp
 function switchTab(tabName) {
     const tabViews = document.querySelectorAll('.tab-view');
@@ -224,6 +269,14 @@ function switchTab(tabName) {
         }
         renderRelativeContact();
         renderFamilyGroup();
+        syncFamilyGroupFromServer();
+        startGroupPolling();
+    } else {
+        stopGroupPolling();
+    }
+
+    if (tabName === 'emergency') {
+        renderRelativeContact();
     }
 
     refreshIcons();
@@ -247,6 +300,8 @@ function renderRelativeContact() {
     const nameEl = document.getElementById('savedRelativeName');
     const phoneEl = document.getElementById('savedRelativePhone');
     const callLink = document.getElementById('callRelativeLink');
+    const emergencyCallBtn = document.getElementById('emergencyRelativeCallBtn');
+    const emergencyCallLabel = document.getElementById('emergencyRelativeCallLabel');
 
     if (contact && contact.name) {
         card?.classList.remove('hidden');
@@ -261,9 +316,21 @@ function renderRelativeContact() {
                 callLink.classList.add('hidden');
             }
         }
+        if (emergencyCallBtn) {
+            if (contact.phone) {
+                emergencyCallBtn.href = `tel:${contact.phone.replace(/\s+/g, '')}`;
+                emergencyCallBtn.classList.remove('hidden');
+                if (emergencyCallLabel) {
+                    emergencyCallLabel.textContent = `Ring ${contact.name}`;
+                }
+            } else {
+                emergencyCallBtn.classList.add('hidden');
+            }
+        }
     } else {
         card?.classList.add('hidden');
         form?.classList.remove('hidden');
+        emergencyCallBtn?.classList.add('hidden');
     }
     refreshIcons();
 }
@@ -303,7 +370,6 @@ window.sendToRelative = async function() {
         ? `Hej${contact?.name ? ' ' + contact.name.split(' ')[0] : ''}! Kan du hjälpa mig kolla om det här är säkert innan jag klickar?\n\n"${content}"${lastCheckedSummary ? '\n\nKollad-analys: ' + lastCheckedSummary : ''}`
         : `Hej${contact?.name ? ' ' + contact.name.split(' ')[0] : ''}! Jag har fått ett misstänkt meddelande och vill dubbelkolla med dig innan jag gör något.`;
 
-    // Om telefonnummer finns sparat, öppna SMS direkt på mobilen
     if (contact && contact.phone) {
         const cleanPhone = contact.phone.replace(/\s+/g, '');
         const sep = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? '&' : '?';
@@ -331,7 +397,7 @@ window.sendToRelative = async function() {
     }
 };
 
-// Familjegrupp (förberedd för server-synk + lokal historik)
+// Familjegrupp (synkad mot server + lokal cache)
 function getFamilyGroup() {
     try {
         return JSON.parse(localStorage.getItem('kollad_family_group') || 'null');
@@ -343,6 +409,26 @@ function getFamilyGroup() {
 function saveFamilyGroup(group) {
     localStorage.setItem('kollad_family_group', JSON.stringify(group));
     renderFamilyGroup();
+}
+
+async function syncFamilyGroupFromServer() {
+    const group = getFamilyGroup();
+    if (!group || !group.code) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/group/${encodeURIComponent(group.code)}`);
+        if (!res.ok) return;
+        const serverGroup = await res.json();
+        if (Array.isArray(serverGroup.events)) {
+            saveFamilyGroup({
+                ...group,
+                name: serverGroup.name || group.name,
+                events: serverGroup.events
+            });
+        }
+    } catch (err) {
+        console.log('Kunde inte hämta grupp från servern:', err);
+    }
 }
 
 function renderFamilyGroup() {
@@ -418,7 +504,7 @@ function renderFamilyGroup() {
     refreshIcons();
 }
 
-window.createFamilyGroup = function() {
+window.createFamilyGroup = async function() {
     const name = document.getElementById('groupNameInput')?.value.trim() || 'Min familjegrupp';
     const randomDigits = Math.floor(1000 + Math.random() * 9000);
     const code = `KOLLAD-${randomDigits}`;
@@ -429,10 +515,29 @@ window.createFamilyGroup = function() {
         shareWarnings: true,
         events: []
     });
+
+    try {
+        await fetch(`${API_BASE}/api/group/event`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                code,
+                name,
+                member: 'Gruppstart',
+                text: `Gruppen "${name}" skapades`,
+                reason: 'Redo för delade varningar'
+            })
+        });
+        await syncFamilyGroupFromServer();
+    } catch (e) {
+        console.log('Kunde inte registrera grupp på servern:', e);
+    }
+
+    startGroupPolling();
     showToast(`Familjegruppen "${name}" skapades!`);
 };
 
-window.joinFamilyGroup = function() {
+window.joinFamilyGroup = async function() {
     const rawCode = document.getElementById('joinCodeInput')?.value.trim().toUpperCase() || '';
     if (!rawCode) {
         showToast('Skriv in en inbjudningskod först.');
@@ -446,6 +551,8 @@ window.joinFamilyGroup = function() {
         shareWarnings: true,
         events: []
     });
+    await syncFamilyGroupFromServer();
+    startGroupPolling();
     showToast(`Ansluten till grupp ${code}!`);
 };
 
@@ -485,24 +592,48 @@ window.toggleGroupWarningSync = function() {
 };
 
 window.leaveFamilyGroup = function() {
+    stopGroupPolling();
     localStorage.removeItem('kollad_family_group');
     renderFamilyGroup();
     showToast('Du har lämnat familjegruppen.');
 };
 
-function pushWarningToFamilyGroup(text, reason) {
+async function pushWarningToFamilyGroup(text, reason) {
     const group = getFamilyGroup();
     if (!group || group.shareWarnings === false) return;
 
+    const shortText = text.length > 42 ? text.slice(0, 42) + '...' : text;
     const events = Array.isArray(group.events) ? group.events : [];
     events.unshift({
         member: 'Du',
-        text: text.length > 42 ? text.slice(0, 42) + '...' : text,
+        text: shortText,
         reason: reason || 'Hög risk upptäckt',
         date: new Date().toLocaleDateString('sv-SE')
     });
-    group.events = events.slice(0, 15);
+    group.events = events.slice(0, 20);
     saveFamilyGroup(group);
+
+    try {
+        const res = await fetch(`${API_BASE}/api/group/event`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                code: group.code,
+                name: group.name,
+                member: 'Du',
+                text: shortText,
+                reason: reason || 'Hög risk upptäckt'
+            })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.group && Array.isArray(data.group.events)) {
+                saveFamilyGroup({ ...group, events: data.group.events });
+            }
+        }
+    } catch (e) {
+        console.log('Kunde inte skicka varning till serverns grupp:', e);
+    }
 }
 
 // Bluff-radarn logik
@@ -637,10 +768,23 @@ function renderScamRadar(items) {
     refreshIcons();
 }
 
-function loadScamRadar() {
+async function loadScamRadar() {
     const items = getMergedRadarItems();
     localStorage.setItem('kollad_radar', JSON.stringify(items));
     renderScamRadar(items);
+
+    try {
+        const res = await fetch(`${API_BASE}/api/radar`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const serverItems = Array.isArray(data) ? data : data.items;
+        if (Array.isArray(serverItems) && serverItems.length > 0) {
+            localStorage.setItem('kollad_radar', JSON.stringify(serverItems));
+            renderScamRadar(serverItems);
+        }
+    } catch (e) {
+        console.log('Kunde inte hämta radar från servern, använder lokal lista:', e);
+    }
 }
 
 // Hantera statistik för dagens blockerade hot (nollställs per dag)
@@ -1002,6 +1146,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const askRelativeBtn = document.getElementById('askRelativeBtn');
     if (askRelativeBtn) {
         askRelativeBtn.addEventListener('click', () => {
+            const currentVal = document.getElementById('userInput')?.value.trim() || '';
+            const relInput = document.getElementById('relativeQuestionInput');
+            if (relInput && currentVal) {
+                relInput.value = currentVal;
+            }
             switchTab('family');
         });
     }
@@ -1025,6 +1174,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadScamRadar();
     renderRelativeContact();
     renderFamilyGroup();
+    syncFamilyGroupFromServer();
+    handleIncomingShare();
 
     if (analyzeBtn) {
         analyzeBtn.addEventListener('click', async () => {
@@ -1052,7 +1203,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const subState = getSubscriptionState();
-                const response = await fetch('https://kollad.onrender.com/api/check', {
+                const response = await fetch(`${API_BASE}/api/check`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1091,7 +1242,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         triggerSecurityAlert(data.result.reason);
                         saveToWarnings(textToCheck, data.result.reason);
                         updateLocalRadar(textToCheck);
-                        pushWarningToFamilyGroup(textToCheck, data.result.reason);
+                        await pushWarningToFamilyGroup(textToCheck, data.result.reason);
+                        loadScamRadar();
                     }
                 }
 
@@ -1171,19 +1323,21 @@ window.checkEmailLeak = async function() {
 
     try {
         const subState = getSubscriptionState();
-        const response = await fetch('https://kollad.onrender.com/api/check-email', {
+        const response = await fetch(`${API_BASE}/api/check-email`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: email, userId: getUserId(), plan: subState.plan })
         });
 
-        if (!response.ok) throw new Error('Kunde inte nå servern.');
-
         const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Kunde inte nå servern.');
+        }
+
         container.textContent = data.result || 'Inga kända dataläckor hittades för denna e-postadress.';
     } catch (error) {
         console.error('Fel:', error);
-        container.textContent = 'Kunde inte nå servern för e-postkontroll.';
+        container.textContent = error.message || 'Kunde inte nå servern för e-postkontroll.';
     }
 };
 
