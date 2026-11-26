@@ -1,66 +1,70 @@
-# Kollad 🛡️
+<div align="center">
+  <img src="./assets/bilder/kollad-icon.png" alt="Kollad Logotyp" width="84" />
+  <h1>Kollad</h1>
+  <p><strong>Din digitala säkerhetsvakt mot bedrägerier – byggd för iOS och Android</strong></p>
 
-**Kollad** är en modern säkerhetsapp som hjälper dig att upptäcka bedrägerier, analysera misstänkta meddelanden och länkar med hjälp av AI, samt kontrollera om dina personliga uppgifter förekommer i kända dataläckor.
-
----
-
-## 🚀 Huvudfunktioner
-
-*   **AI-driven Riskanalys:** Klistra in SMS, chattmeddelanden, e-post eller webbadresser för att omedelbart få en bedömning av risknivå (låg/hög) och en tydlig motivering som genereras via Gemini AI.
-*   **Guard Live (Realtidsskydd):** Ett övervakningsläge med live-status, räknare för blockerade hot och stöd för lokala push-notiser via Capacitor.
-*   **ID-skydd & Dataläcka:** Sök och kontrollera om din e-postadress förekommer i kända dataläckor.
-*   **Sökhistorik:** Sparar dina senaste kontroller lokalt i webbläsaren med klickbara genvägar (chips) för snabb åtkomst.
-*   **Kvothantering & Säkerhet:** Inbyggd rate-limiting och spårning av gratiskvoter för att skydda API:et mot missbruk.
+  ![Version](https://img.shields.io/badge/version-1.8.0-00d2ff?style=flat-square)
+  ![Platforms](https://img.shields.io/badge/platforms-iOS%20%7C%20Android%20%7C%20Web-2563eb?style=flat-square)
+  ![Language](https://img.shields.io/badge/språk-Svenska-10b981?style=flat-square)
+</div>
 
 ---
 
-## 🛠️ Teknikstack
+## Om Kollad
 
-*   **Frontend:** HTML5, CSS3, JavaScript (ES6+ Moduler)
-*   **Mobilintegration:** Capacitor (för lokala notiser)
-*   **Backend:** Node.js, Express
-*   **AI-motor:** Google GenAI SDK (`@google/genai`)
-*   **Hosting:** Render (för backend-API:et)
+**Kollad** är en säkerhetsapp och ett tillhörande backend-API utvecklat för att ge ett enkelt, snabbt och tryggt skydd mot digitala bedrägerier i vardagen. Appen byggs med **Capacitor** för både **iOS** och **Android** och är utformad för att hjälpa användare – inte minst äldre och anhöriga – att kontrollera misstänkta länkar, SMS, mejl och e-postadresser innan de klickar eller lämnar ut uppgifter.
 
 ---
 
-## 📁 Projektstruktur
+## Funktioner (`v1.8.0`)
+
+### Snabbkoll av länk, SMS & mejl
+* **Omedelbar riskanalys (`POST /api/check`):** Bedömer misstänkta länkar, SMS och mejl och presenterar tydlig risknivå samt motivering på svenska.
+* **Lokal förkontroll & AI-analys:** Kända bluffdomäner och vanliga BankID-fällor fångas direkt i en snabb förkontroll, medan övriga texter analyseras av AI med 1-timmes servercache.
+* **Smidig inmatning:** Stöd för inklistring med ett tryck, inbyggda testexempel, sökhistorik (senaste 5 kontrollerna) samt förberedd delningsmottagning (`handleIncomingShare`) inför iOS/Android Share Target.
+
+### Guard Live & Varningshistorik
+* **Realtidsskydd:** Tydlig statuspanel med på/av-reglage för Guard Live och automatisk dygnsräknare för blockerade hot.
+* **Varningslogg & aviseringar:** Sparar upptäckta högriskförsök med datum och orsak, med stöd för ljud, vibration och lokala mobilnotiser (`@capacitor/local-notifications`).
+
+### Dataläckagekoll (E-post)
+* **Kontroll mot kända dataläckor (`POST /api/check-email`):** Hopfällbar kontroll på startskärmen som söker efter om en e-postadress förekommit i kända dataläckor (via XposedOrNot med servercache och skydd mot överbelastning).
+
+### Bluff-radarn i Sverige
+* **Aktuella hot (`GET /api/radar`):** Visar pågående bluffteman i Sverige (leveransbluffar, BankID-kapningar, falska fakturor och myndighetsbluffar) och låter användaren fylla i och testa exempel direkt med ett tryck.
+
+### Anhörig & Familjegrupp
+* **Trygghetskontakt:** Spara namn och nummer till en anhörig för att snabbt kunna ringa eller skicka iväg ett misstänkt meddelande (inklusive Kollads analys) via SMS eller delningsmenyn.
+* **Delad familjegrupp (`GET /api/group/:code`, `POST /api/group/event`):** Skapa eller gå med i en trygghetsgrupp med en enkel kod (`KOLLAD-XXXX`), dela varningar automatiskt och håll flödet uppdaterat var 15:e sekund när fliken är öppen.
+
+### Akut-hjälpen
+* **Steg-för-steg vid misstag:** Lugn och tydlig åtgärdslista om någon råkat klicka på en länk eller signera med BankID – med snabbknapp för att ringa sparad anhörig, direktuppringning till Polisen (`114 14`) och länk till `polisen.se`.
+
+### Tillgänglighet & Kollad PRO
+* **Anpassad läsbarhet:** Inställningsvy med läge för **större och tydligare text**, val för ljud och vibration samt rensning av historik.
+* **Kollad PRO:** Översikt över PRO-funktioner och 7 dagars kostnadsfri testperiod.
+
+---
+
+## Teknikstack & Arkitektur
+
+| Del | Teknik | Beskrivning |
+| :--- | :--- | :--- |
+| **Mobilappar (iOS & Android)** | HTML5, CSS3, JavaScript, Capacitor | Cross-platform-gränssnitt med native-stöd för notiser, vibration och delningsflöden |
+| **Backend & API** | Node.js, Express | REST-API för bedrägerianalys, e-postläckor, bluff-radar och familjegrupper |
+| **AI-analys** | Google GenAI (`@google/genai`) | Kontextuell bedömning av misstänkta SMS, länkar och mejl |
+| **Säkerhet & Skydd** | `express-rate-limit`, Cache & Cooldown | Rate limiting per IP, användarcooldown, 500-teckensgräns och TTL-cache |
+
+---
+
+## Projektstruktur
 
 ```text
 kollad/
-├── app.js             # Huvudlogik för gränssnitt, API-anrop och lokal lagring
-├── server.js          # Express-backend med rate limiting och AI-integration
-├── index.html         # Användargränssnitt (UI)
-├── database.json      # Lokal databas för användarkvoter (genereras automatiskt)
-└── www/
-    └── style.css      # Stilmallar och design
-```
-
----
-
-## ⚙️ Kom igång / Installation
-
-### 1. Klona repositoryt
-```bash
-git clone https://github.com/OskarJ1993/kollad.git
-cd kollad
-```
-
-### 2. Installera beroenden
-```bash
-npm install
-```
-
-### 3. Konfigurera API-nyckel
-Säkerställ att du har satt din Gemini API-nyckel i miljövariablerna på din server eller via en `.env`-fil:
-```env
-GEMINI_API_KEY=din_api_nyckel_här
-```
-
-### 4. Starta servern
-```bash
-node server.js
-```
-
-### 5. Köra klienten
-Öppna `index.html` via en lokal utvecklingsserver (som *Live Server* i VS Code) för att testa gränssnittet i webbläsaren.
+├── index.html          # Huvudvy med 5 flikar samt inställnings- och PRO-modaler
+├── app.js              # Klientlogik, fliknavigering, delningsmottagning och API-anrop
+├── server.js           # Express-server med endpoints, caching och missbruksskydd
+├── www/
+│   └── style.css       # Mörkt tema, safe-area-anpassning och läge för större text
+└── assets/
+    └── bilder/         # Appikoner och grafiska resurser
