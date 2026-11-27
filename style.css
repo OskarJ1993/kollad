@@ -449,26 +449,6 @@ textarea:focus, input:focus {
   font-size: 0.88rem;
 }
 
-/* ACCORDION */
-.accordion-summary {
-  list-style: none;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.accordion-summary::-webkit-details-marker {
-  display: none;
-}
-
-.accordion-body {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-}
-
 /* STACK LISTS & GROUP EVENTS */
 .stack-list {
   display: flex;
@@ -543,7 +523,7 @@ textarea:focus, input:focus {
   font-size: 0.92rem;
 }
 
-/* BOTTOM NAV */
+/* BOTTOM NAV (6 FLIKAR) */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -556,8 +536,8 @@ textarea:focus, input:focus {
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  grid-template-columns: repeat(6, 1fr);
+  padding: 6px 2px calc(6px + env(safe-area-inset-bottom));
   z-index: 30;
 }
 
@@ -568,10 +548,10 @@ textarea:focus, input:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  font-size: 0.72rem;
+  gap: 2px;
+  font-size: 0.68rem;
   font-weight: 600;
-  padding: 6px 2px;
+  padding: 6px 1px;
   cursor: pointer;
   min-width: 0;
 }
@@ -588,7 +568,7 @@ textarea:focus, input:focus {
 }
 
 .nav-icon {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
 }
 
 /* MODAL */
