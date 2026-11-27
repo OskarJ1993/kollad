@@ -574,6 +574,24 @@ textarea:focus, input:focus {
 
 .nav-icon {
   font-size: 1.15rem;
+  height: 22px;
+  display: grid;
+  place-items: center;
+}
+
+.nav-logo-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  object-fit: cover;
+  display: block;
+  opacity: 0.65;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.nav-btn.active .nav-logo-icon {
+  opacity: 1;
+  transform: scale(1.06);
 }
 
 /* MODAL */
