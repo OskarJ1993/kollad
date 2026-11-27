@@ -1,512 +1,350 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Kollad - Säkerhetsapp</title>
-
-    <!-- Google Fonts: Inter för modernt app-gränssnitt -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Lucide Icons (Vektorikoner) -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <script type="importmap">
-      {
-        "imports": {
-          "@capacitor/local-notifications": "https://esm.sh/@capacitor/local-notifications"
-        }
-      }
-    </script>
-
-    <link rel="stylesheet" href="./style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1120" />
+  <title>Kollad – Din säkerhetsvakt</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div id="toastBanner" class="toast-banner hidden" role="status" aria-live="polite"></div>
+  <div class="app-shell">
+    <!-- TOP HEADER -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-badge" aria-hidden="true">🛡️</div>
+        <div>
+          <h1 class="brand-title">Kollad</h1>
+          <p class="brand-sub">Säkerhetsvakt mot bedrägerier</p>
+        </div>
+      </div>
 
-    <div class="app-container" id="appContainer">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="header-top-bar">
-                <span class="header-spacer" aria-hidden="true"></span>
-                <div class="logo-area">
-                    <img src="./assets/bilder/kollad-icon.png" alt="Kollad Logotyp" class="app-logo">
-                    <h1>Kollad</h1>
-                </div>
-                <button type="button" class="header-settings-btn" onclick="openSettings()" title="Inställningar" aria-label="Inställningar">
-                    <i data-lucide="settings"></i>
-                </button>
+      <div class="topbar-actions">
+        <button id="openProBtn" class="pill-btn pill-pro" type="button">PRO</button>
+        <button id="openSettingsBtn" class="icon-btn" type="button" aria-label="Inställningar">⚙️</button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="content">
+      <!-- TAB 1: HEM -->
+      <section id="tab-home" class="tab-panel active">
+        <!-- Guard Live Card -->
+        <div class="card guard-card">
+          <div class="guard-row">
+            <div>
+              <span id="guardStatusBadge" class="status-pill status-on">● Guard Live Aktivt</span>
+              <h2 class="card-title mt-8">Skyddad i vardagen</h2>
+              <p class="muted small">Blockerade hot idag: <strong id="blockedTodayCount">0</strong></p>
             </div>
-            <p class="welcome-subtitle">Ditt digitala skydd är aktivt</p>
-            <button type="button" id="planStatusPill" class="plan-pill free" onclick="openProModal()">
-                <i data-lucide="sparkles"></i>
-                <span id="planStatusText">Gratisversion • Uppgradera till PRO</span>
+            <label class="switch" aria-label="Slå på eller av Guard Live">
+              <input id="guardToggle" type="checkbox" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Quick Check Card -->
+        <div class="card">
+          <div class="card-header-row">
+            <h2 class="card-title">Snabbkoll</h2>
+            <span class="muted tiny">Länk, SMS, mejl eller telefonnummer</span>
+          </div>
+
+          <textarea
+            id="checkInput"
+            rows="4"
+            maxlength="500"
+            placeholder="Klistra in misstänkt SMS, länk, mejl eller telefonnummer här..."
+          ></textarea>
+
+          <div class="input-meta-row">
+            <span id="charCount" class="muted tiny">0 / 500</span>
+            <div class="quick-actions-inline">
+              <button id="pasteBtn" class="text-btn" type="button">📋 Klistra in</button>
+              <button id="clearInputBtn" class="text-btn" type="button">Rensa</button>
+            </div>
+          </div>
+
+          <!-- Skärmdumps-skanner -->
+          <div class="scan-row">
+            <input id="screenshotInput" type="file" accept="image/*" hidden />
+            <button id="scanScreenshotBtn" class="btn btn-secondary btn-full" type="button">
+              📸 Välj skärmdump / Foto att granska
             </button>
-        </header>
+          </div>
 
-        <!-- Huvud-innehåll (scrollar ovanför den fasta bottenmenyn) -->
-        <main class="app-main">
+          <!-- Testexempel -->
+          <div class="chips-row">
+            <button class="chip example-chip" type="button" data-example="PostNord: Ditt paket har fastnat i tullen. Betala 19 kr via https://postnord-leverans-se.info för utlämning.">📦 Paket-SMS</button>
+            <button class="chip example-chip" type="button" data-example="Viktigt från BankID: Ditt ID håller på att spärras. Logga in omgående på bankid-sakerhet.com">🏦 BankID-fälla</button>
+            <button class="chip example-chip" type="button" data-example="+44 20 7946 0991">📞 Utlandsnummer</button>
+          </div>
 
-            <!-- FLIK 1: HEM -->
-            <div id="tab-home" class="tab-view">
-                <!-- Inmatningsruta -->
-                <div class="input-card">
-                    <div class="input-guide">
-                        <div class="input-guide-header">
-                            <i data-lucide="shield-question" class="input-guide-icon"></i>
-                            <span>Snabbkoll av länk, SMS eller mejl</span>
-                        </div>
-                        <p class="input-guide-text">
-                            Klistra in en misstänkt länk, ett SMS eller mejl innan du klickar.
-                        </p>
-                    </div>
-                    <div class="input-wrapper">
-                        <i data-lucide="search" class="input-icon"></i>
-                        <input type="text" id="userInput" placeholder="Klistra in länk, SMS eller e-post...">
-                        <button type="button" id="pasteBtn" class="paste-btn" title="Klistra in från urklipp">
-                            <i data-lucide="clipboard-paste"></i>
-                        </button>
-                    </div>
-                    <div class="quick-examples" aria-label="Snabbexempel att testa">
-                        <span class="quick-examples-label">Testa exempel:</span>
-                        <button type="button" class="example-chip" data-sample="PostNord: Ditt paket har stoppats p.g.a. obetald avgift. Bekräfta här: http://postnord-leverans-se.com">
-                            SMS-bluff
-                        </button>
-                        <button type="button" class="example-chip" data-sample="https://bankid-sakerhet-kontroll.se/logga-in">
-                            Blufflänk
-                        </button>
-                    </div>
-                    <button id="analyzeBtn" class="primary-btn">
-                        <span class="btn-text">KOLLA</span>
-                        <span class="spinner hidden"></span>
-                    </button>
-                </div>
+          <button id="checkSubmitBtn" class="btn btn-primary btn-full mt-12" type="button">
+            🔍 KOLLA NU
+          </button>
 
-                <!-- Resultat-ruta -->
-                <div id="resultCard" class="result-card hidden">
-                    <div class="result-header">
-                        <span id="resultIcon" class="result-icon">
-                            <i data-lucide="shield-alert"></i>
-                        </span>
-                        <h3 id="resultTitle">Analysresultat</h3>
-                    </div>
-                    <p id="resultDescription">Här visas analysen...</p>
-
-                    <div id="proUpgradeBanner" class="pro-inline-box hidden">
-                        <div class="pro-inline-header">
-                            <i data-lucide="crown"></i>
-                            <strong>Fortsätt vara skyddad med Kollad PRO</strong>
-                        </div>
-                        <p>Du har använt dina gratiskontroller. Med PRO får du obegränsade kontroller, full Guard Live och e-postläckagekoll.</p>
-                        <button type="button" class="primary-btn" onclick="openProModal()">
-                            SE PRO-FÖRDELAR
-                        </button>
-                    </div>
-
-                    <div class="result-actions">
-                        <button type="button" id="askRelativeBtn" class="secondary-action-btn">
-                            <i data-lucide="users"></i> Fråga en anhörig
-                        </button>
-                        <button type="button" id="openHelpFromResultBtn" class="emergency-link-btn">
-                            <i data-lucide="life-buoy"></i> Jag råkade klicka
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Status / Guard Live med direkt på/av-reglage -->
-                <div id="homeStatusCard" class="status-card active-guard guard-live-card">
-                    <div class="status-top">
-                        <div class="status-badge">
-                            <span id="homeStatusDot" class="status-dot-green"></span>
-                            <h3>Guard Live</h3>
-                            <span id="homeLivePill" class="live-pill">LIVE</span>
-                        </div>
-                        <label class="switch" title="Slå på eller av Guard Live">
-                            <input type="checkbox" id="guardToggle" checked onchange="toggleGuardLive()">
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <div class="status-main-row">
-                        <i data-lucide="shield-check" id="homeShieldIcon" class="status-shield-icon"></i>
-                        <p id="homeStatusText" class="status-main-text">Guard Live är aktivt</p>
-                    </div>
-                    <p id="guardSubtitle" class="welcome-subtitle" style="text-align: left;">
-                        Realtidsskydd aktivt • <span id="blockedCount" class="stat-highlight">0</span> blockerade hot idag
-                    </p>
-                </div>
-
-                <!-- Hopfällbar dataläckage-kontroll (E-post) -->
-                <div class="input-card collapsible-card">
-                    <button type="button" id="toggleLeakBtn" class="collapsible-trigger" aria-expanded="false" onclick="toggleLeakSection()">
-                        <span class="collapsible-title">
-                            <i data-lucide="mail-warning" class="header-icon"></i>
-                            <span>Kolla dataläckor (E-post)</span>
-                        </span>
-                        <i data-lucide="chevron-down" id="leakChevron" class="chevron-icon"></i>
-                    </button>
-                    <div id="leakSectionBody" class="collapsible-body hidden">
-                        <p class="input-guide-text">
-                            Se om din e-postadress har förekommit i kända dataläckor.
-                        </p>
-                        <div class="input-wrapper">
-                            <i data-lucide="mail" class="input-icon"></i>
-                            <input type="email" id="leakEmailInput" placeholder="din.epost@exempel.se">
-                        </div>
-                        <button type="button" onclick="checkEmailLeak()" class="secondary-action-btn" style="width: 100%; padding: 11px;">
-                            <i data-lucide="search-check"></i> SÖK LÄCKOR
-                        </button>
-                        <div id="leakResultContainer" class="result-card hidden" style="margin-top: 2px; font-size: 12px;"></div>
-                    </div>
-                </div>
-
-                <!-- Senaste kontroller -->
-                <div class="history-card">
-                    <div class="history-card-header">
-                        <i data-lucide="history" class="header-icon"></i>
-                        <span>Senaste kontroller</span>
-                    </div>
-                    <div class="history-list" id="historyList">
-                        <div class="history-item">
-                            <span class="item-text" style="color: var(--text-secondary);">Inga kontroller gjorda ännu.</span>
-                        </div>
-                    </div>
-                </div>
+          <!-- Resultatbox -->
+          <div id="checkResultBox" class="result-box hidden" role="status" aria-live="polite">
+            <div class="result-header">
+              <span id="resultRiskBadge" class="risk-badge">BEDÖMNING</span>
+              <span id="resultSourceTag" class="muted tiny"></span>
             </div>
+            <p id="resultSummary" class="result-summary"></p>
+            <p id="resultAdvice" class="result-advice"></p>
 
-            <!-- FLIK 2: BLUFF-RADARN -->
-            <div id="tab-radar" class="tab-view hidden">
-                <div class="history-card">
-                    <div class="status-top">
-                        <div class="history-card-header">
-                            <i data-lucide="radar" class="header-icon radar-icon"></i>
-                            <span>Bluff-radarn i Sverige</span>
-                        </div>
-                        <span class="live-pill">LIVE</span>
-                    </div>
-                    <p class="welcome-subtitle radar-intro">
-                        Se vilka bluffar som sprids just nu. Tryck på en rad för att fylla i och testa i kontrollen.
-                    </p>
-                    <div class="history-list" id="radarList">
-                        <!-- Fylls på automatiskt av app.js -->
-                    </div>
-                </div>
+            <div class="result-actions">
+              <button id="askFamilyResultBtn" class="btn btn-warning btn-sm" type="button">
+                👨‍👩‍👧 Fråga min anhörig
+              </button>
+              <button id="shareResultBtn" class="btn btn-secondary btn-sm" type="button">
+                📤 Dela varning
+              </button>
             </div>
+          </div>
 
-            <!-- FLIK 3: ANHÖRIG & FAMILJEGRUPP -->
-            <div id="tab-family" class="tab-view hidden">
-                <!-- Del 1: Fråga en anhörig -->
-                <div class="input-card">
-                    <div class="input-guide">
-                        <div class="input-guide-header">
-                            <i data-lucide="heart-handshake" class="input-guide-icon"></i>
-                            <span>Fråga en anhörig</span>
-                        </div>
-                        <p class="input-guide-text">
-                            Osäker på ett SMS, mejl eller samtal? Skicka det till någon du litar på innan du klickar.
-                        </p>
-                    </div>
-
-                    <div id="savedRelativeCard" class="relative-contact-card hidden">
-                        <div class="relative-contact-info">
-                            <strong id="savedRelativeName">Anna (Dotter)</strong>
-                            <small id="savedRelativePhone">070-123 45 67</small>
-                        </div>
-                        <div class="relative-contact-btns">
-                            <a id="callRelativeLink" href="tel:" class="secondary-action-btn">
-                                <i data-lucide="phone"></i> Ring
-                            </a>
-                            <button type="button" class="paste-btn" onclick="editRelativeContact()" title="Ändra kontakt">
-                                <i data-lucide="pencil"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="relativeSetupForm" class="relative-form">
-                        <div class="input-wrapper">
-                            <i data-lucide="user" class="input-icon"></i>
-                            <input type="text" id="relativeNameInput" placeholder="Namn, t.ex. Anna (Dotter)">
-                        </div>
-                        <div class="input-wrapper">
-                            <i data-lucide="phone" class="input-icon"></i>
-                            <input type="tel" id="relativePhoneInput" placeholder="Mobilnummer, t.ex. 0701234567">
-                        </div>
-                        <button type="button" onclick="saveRelativeContact()" class="secondary-action-btn" style="width: 100%; padding: 10px;">
-                            <i data-lucide="check"></i> SPARA TRYGGHETSKONTAKT
-                        </button>
-                    </div>
-
-                    <div class="input-wrapper">
-                        <i data-lucide="message-square" class="input-icon"></i>
-                        <input type="text" id="relativeQuestionInput" placeholder="Skriv eller klistra in det du vill fråga om...">
-                    </div>
-
-                    <button type="button" onclick="sendToRelative()" class="primary-btn">
-                        <i data-lucide="send" style="width: 15px; height: 15px;"></i>
-                        <span class="btn-text">SKICKA TILL ANHÖRIG</span>
-                    </button>
-                </div>
-
-                <!-- Del 2: Familjegrupp -->
-                <div class="history-card">
-                    <div class="status-top">
-                        <div class="history-card-header">
-                            <i data-lucide="users" class="header-icon" style="color: var(--accent-color);"></i>
-                            <span>Familje- & trygghetsgrupp</span>
-                        </div>
-                        <span id="groupStatusPill" class="live-pill">REDO</span>
-                    </div>
-
-                    <!-- Vy när man ännu inte är med i en grupp -->
-                    <div id="groupJoinOrCreateView" class="group-box">
-                        <p class="input-guide-text">
-                            Bjud in familjen med en enkel kod så kan ni se varandras bluffvarningar och hjälpas åt direkt.
-                        </p>
-                        <div class="input-wrapper">
-                            <i data-lucide="shield" class="input-icon"></i>
-                            <input type="text" id="groupNameInput" placeholder="Gruppnamn, t.ex. Familjen Johansson">
-                        </div>
-                        <button type="button" onclick="createFamilyGroup()" class="secondary-action-btn" style="width: 100%; padding: 11px;">
-                            <i data-lucide="plus-circle"></i> SKAPA FAMILJEGRUPP
-                        </button>
-
-                        <div class="group-divider"><span>eller gå med med kod</span></div>
-
-                        <div class="group-join-row">
-                            <div class="input-wrapper" style="flex: 1;">
-                                <i data-lucide="key-round" class="input-icon"></i>
-                                <input type="text" id="joinCodeInput" placeholder="Kod, t.ex. KOLLAD-4821">
-                            </div>
-                            <button type="button" onclick="joinFamilyGroup()" class="secondary-action-btn" style="padding: 11px 14px;">
-                                Gå med
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Vy när man är aktiv i en grupp -->
-                    <div id="groupActiveView" class="group-box hidden">
-                        <div class="group-header-card">
-                            <div>
-                                <strong id="activeGroupName" class="item-text" style="font-size: 13.5px;">Familjen</strong>
-                                <div class="group-code-row">
-                                    <small class="radar-subtext">Inbjudningskod: <strong id="activeGroupCode" style="color: var(--accent-color);">KOLLAD-0000</strong></small>
-                                </div>
-                            </div>
-                            <button type="button" onclick="shareGroupInvite()" class="secondary-action-btn">
-                                <i data-lucide="share-2"></i> Bjud in
-                            </button>
-                        </div>
-
-                        <div class="setting-item" style="padding: 2px 0;">
-                            <span style="font-size: 12px; color: var(--text-secondary);">Dela mina varningar med gruppen</span>
-                            <label class="switch">
-                                <input type="checkbox" id="shareWarningsToggle" checked onchange="toggleGroupWarningSync()">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-
-                        <div class="history-card-header" style="margin-top: 2px;">
-                            <i data-lucide="bell-ring" class="header-icon"></i>
-                            <span>Varningar i gruppen</span>
-                        </div>
-                        <div class="history-list" id="groupFeedList">
-                            <!-- Fylls på av app.js -->
-                        </div>
-
-                        <button type="button" onclick="leaveFamilyGroup()" class="danger-btn" style="margin-top: 2px;">
-                            <i data-lucide="log-out"></i> Lämna gruppen
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- FLIK 4: VARNINGSHISTORIK -->
-            <div id="tab-warnings" class="tab-view hidden">
-                <div class="history-card">
-                    <div class="status-top">
-                        <div class="history-card-header">
-                            <i data-lucide="alert-triangle" class="header-icon" style="color: var(--danger-color);"></i>
-                            <span>Upptäckta hot & varningar</span>
-                        </div>
-                        <button type="button" onclick="clearWarnings()" class="paste-btn" title="Rensa varningar" style="width: auto; padding: 0 8px; font-size: 11px;">
-                            Rensa
-                        </button>
-                    </div>
-                    <div class="history-list" id="warningsList">
-                        <div class="history-item">
-                            <span class="item-text" style="color: var(--text-secondary);">Inga hot har blockerats ännu.</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- FLIK 5: AKUT-HJÄLPEN -->
-            <div id="tab-emergency" class="tab-view hidden">
-                <div class="history-card emergency-card">
-                    <div class="status-top">
-                        <div class="history-card-header">
-                            <i data-lucide="life-buoy" class="header-icon" style="color: var(--danger-color);"></i>
-                            <span style="color: var(--text-primary);">Akut-hjälpen – Om du råkat klicka</span>
-                        </div>
-                    </div>
-                    <p class="emergency-intro">
-                        Ta ett lugnt andetag och följ dessa steg i ordning om du råkat klicka på en länk, lämnat ut uppgifter eller godkänt med BankID:
-                    </p>
-                    <ol class="emergency-steps">
-                        <li><strong>Avbryt direkt:</strong> Stäng sidan eller appen och klicka inte på fler länkar.</li>
-                        <li><strong>Spärra kort eller konto:</strong> Ring din bank omedelbart via telefonnumret på baksidan av ditt bankkort eller bankens officiella kundtjänst.</li>
-                        <li><strong>Spärra BankID om du signerat/loggat in:</strong> Be din bank spärra och utfärda ett nytt BankID direkt.</li>
-                        <li><strong>Polisanmäl:</strong> Spara skärmdumpar, telefonnummer och länkar och anmäl på <strong>polisen.se</strong> eller ring <strong>114 14</strong>.</li>
-                    </ol>
-                    <div class="emergency-links">
-                        <a id="emergencyRelativeCallBtn" href="tel:" class="secondary-action-btn hidden">
-                            <i data-lucide="heart-handshake"></i> <span id="emergencyRelativeCallLabel">Ring din anhöriga</span>
-                        </a>
-                        <a href="tel:11414" class="emergency-call-btn">
-                            <i data-lucide="phone-call"></i> Ring Polisen (114 14)
-                        </a>
-                        <a href="https://polisen.se/utsatt-for-brott/polisanmalan/" target="_blank" rel="noopener noreferrer" class="secondary-action-btn">
-                            <i data-lucide="external-link"></i> Polisanmälan på polisen.se
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-        </main>
-
-        <!-- Fast bottenmeny (5 korta och tydliga flikar) -->
-        <div class="bottom-dock">
-            <nav class="bottom-nav">
-                <button class="nav-item active" data-tab="home" onclick="switchTab('home')">
-                    <i data-lucide="home"></i>
-                    <small>Hem</small>
-                </button>
-                <button class="nav-item" data-tab="radar" onclick="switchTab('radar')">
-                    <i data-lucide="radar"></i>
-                    <small>Bluff-radar</small>
-                </button>
-                <button class="nav-item" data-tab="family" onclick="switchTab('family')">
-                    <i data-lucide="users"></i>
-                    <small>Anhörig</small>
-                </button>
-                <button class="nav-item" data-tab="warnings" onclick="switchTab('warnings')">
-                    <i data-lucide="alert-triangle"></i>
-                    <small>Varningar</small>
-                </button>
-                <button class="nav-item nav-item-emergency" data-tab="emergency" onclick="switchTab('emergency')">
-                    <i data-lucide="life-buoy"></i>
-                    <small>Akut-hjälp</small>
-                </button>
-            </nav>
-
-            <div class="app-footer-info">
-                <small>Kollad v1.8.0 • Din säkerhetsvakt</small>
-            </div>
+          <!-- Senaste 5 kontroller -->
+          <div id="recentHistoryWrap" class="mt-16 hidden">
+            <p class="muted tiny mb-6">Senaste kontroller (tryck för att fylla i igen):</p>
+            <div id="recentHistoryList" class="history-chips"></div>
+          </div>
         </div>
-    </div>
 
-    <!-- INSTÄLLNINGAR MODAL -->
-    <div id="settingsModal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title-group">
-                    <i data-lucide="settings"></i>
-                    <h3>Inställningar</h3>
-                </div>
-                <button type="button" class="close-modal-btn" onclick="closeSettings()">
-                    <i data-lucide="x"></i>
-                </button>
+        <!-- Dataläckagekoll (E-post) -->
+        <details class="card accordion-card">
+          <summary class="accordion-summary">
+            <span>📧 Dataläckagekoll för e-post</span>
+            <span class="muted tiny">Öppna ▾</span>
+          </summary>
+          <div class="accordion-body">
+            <p class="muted small mb-8">Kontrollera om din e-postadress förekommit i kända dataläckor.</p>
+            <div class="inline-form">
+              <input id="emailCheckInput" type="email" placeholder="namn@exempel.se" />
+              <button id="emailCheckBtn" class="btn btn-secondary" type="button">Kolla</button>
             </div>
-            <div class="modal-body">
-                <div class="pro-settings-card">
-                    <div class="pro-settings-info">
-                        <span class="pro-badge-label" id="settingsPlanBadge">GRATISPLAN</span>
-                        <p id="settingsPlanDesc">Uppgradera till PRO för obegränsade kontroller.</p>
-                    </div>
-                    <button type="button" class="secondary-action-btn" onclick="openProModal()">
-                        Hantera / PRO
-                    </button>
-                </div>
+            <div id="emailCheckResult" class="mini-result hidden"></div>
+          </div>
+        </details>
+      </section>
 
-                <div class="setting-item">
-                    <span>Större och tydligare text</span>
-                    <label class="switch">
-                        <input type="checkbox" id="settingLargeText" onchange="toggleLargeText()">
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <span>Ljud vid varningar</span>
-                    <label class="switch">
-                        <input type="checkbox" id="settingSound" checked onchange="saveAlertPreferences()">
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <span>Vibration vid hot</span>
-                    <label class="switch">
-                        <input type="checkbox" id="settingVibrate" checked onchange="saveAlertPreferences()">
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                <div class="privacy-box">
-                    <strong>Integritet & data:</strong> Det du klistrar in skickas för säkerhetsanalys och vi säljer aldrig dina sökningar eller kontaktuppgifter vidare.
-                </div>
-                <div class="setting-action">
-                    <button type="button" onclick="clearHistory()" class="danger-btn">
-                        <i data-lucide="trash-2"></i> Rensa sökhistorik
-                    </button>
-                </div>
-            </div>
+      <!-- TAB 2: BLUFF-RADAR & TRÄNING -->
+      <section id="tab-radar" class="tab-panel">
+        <div class="card">
+          <div class="card-header-row">
+            <h2 class="card-title">📡 Bluff-radarn i Sverige</h2>
+            <button id="refreshRadarBtn" class="text-btn" type="button">↻ Uppdatera</button>
+          </div>
+          <p class="muted small mb-12">Aktuella bedrägerivågor just nu. Tryck på ett exempel för att testa det i snabbkollen.</p>
+          <div id="radarList" class="stack-list"></div>
         </div>
-    </div>
 
-    <!-- KOLLAD PRO MODAL -->
-    <div id="proModal" class="modal-overlay hidden">
-        <div class="modal-content pro-modal-content">
-            <div class="modal-header">
-                <div class="modal-title-group">
-                    <i data-lucide="crown" style="color: #fbbf24;"></i>
-                    <h3>Kollad PRO</h3>
-                </div>
-                <button type="button" class="close-modal-btn" onclick="closeProModal()">
-                    <i data-lucide="x"></i>
-                </button>
+        <!-- Bluff-träning (3 frågor) -->
+        <div class="card">
+          <div class="card-header-row">
+            <h2 class="card-title">🎓 Bluff-träning (Veckans test)</h2>
+            <span id="quizProgressBadge" class="status-pill status-neutral">Fråga 1 / 3</span>
+          </div>
+          <p class="muted small mb-12">Öva på att känna igen vanliga bluffknep i lugn och ro.</p>
+
+          <div id="quizContainer">
+            <div class="quiz-box">
+              <p id="quizScenario" class="quiz-scenario"></p>
             </div>
-            <div class="modal-body">
-                <p class="pro-lead">Tryggt och obegränsat bedrägeriskydd i vardagen – utan krångel.</p>
-                <ul class="pro-feature-list">
-                    <li><i data-lucide="check-circle-2"></i> <strong>Obegränsade kontroller</strong> av länkar, SMS och mejl</li>
-                    <li><i data-lucide="check-circle-2"></i> <strong>Guard Live</strong> med realtidsvarningar och ljud/vibration</li>
-                    <li><i data-lucide="check-circle-2"></i> <strong>Familjegrupp i realtid</strong> med delade varningar</li>
-                    <li><i data-lucide="check-circle-2"></i> <strong>Obegränsad koll av dataläckor</strong> för dina e-postadresser</li>
-                </ul>
-
-                <div class="pro-pricing-box">
-                    <div class="pro-price-row">
-                        <span class="pro-price-title">7 dagar gratis testperiod</span>
-                        <span class="pro-price-tag">0 kr idag</span>
-                    </div>
-                    <small class="pro-price-sub">Därefter 49 kr/mån. Avsluta när som helst med ett klick.</small>
-                </div>
-
-                <button type="button" id="startTrialBtn" class="pro-cta-btn" onclick="activateProTrial()">
-                    PROVA 7 DAGAR GRATIS
-                </button>
-                <button type="button" id="upgradeProBtn" class="primary-btn" onclick="upgradeToPro()">
-                    UPPGRADERA TILL PRO NU
-                </button>
-                <button type="button" class="restore-link-btn" onclick="restorePurchases()">
-                    Har du redan PRO? Återställ köp
-                </button>
+            <div class="quiz-buttons">
+              <button id="quizSafeBtn" class="btn btn-success" type="button">✅ Ser äkta ut</button>
+              <button id="quizScamBtn" class="btn btn-danger" type="button">🚨 Det är en bluff</button>
             </div>
+            <div id="quizFeedback" class="mini-result hidden"></div>
+            <button id="quizNextBtn" class="btn btn-secondary btn-full mt-12 hidden" type="button">
+              Nästa fråga →
+            </button>
+          </div>
         </div>
-    </div>
+      </section>
 
-    <script>
-        lucide.createIcons();
-    </script>
-    <script type="module" src="./app.js"></script>
+      <!-- TAB 3: ANHÖRIG & FAMILJEGRUPP -->
+      <section id="tab-family" class="tab-panel">
+        <!-- Trygghetskontakt -->
+        <div class="card">
+          <h2 class="card-title">❤️ Min trygghetskontakt</h2>
+          <p class="muted small mb-12">Spara en anhörig du litar på för snabb kontakt om något känns osäkert.</p>
+
+          <div class="form-group">
+            <label for="trustedNameInput">Namn på anhörig</label>
+            <input id="trustedNameInput" type="text" placeholder="T.ex. Anna (Dotter)" />
+          </div>
+          <div class="form-group">
+            <label for="trustedPhoneInput">Mobilnummer</label>
+            <input id="trustedPhoneInput" type="tel" placeholder="070-123 45 67" />
+          </div>
+
+          <button id="saveTrustedBtn" class="btn btn-primary btn-full" type="button">Spara trygghetskontakt</button>
+
+          <div id="trustedActionsRow" class="two-col-actions mt-12 hidden">
+            <a id="callTrustedLink" class="btn btn-success" href="tel:">📞 Ring anhörig</a>
+            <button id="smsTrustedBtn" class="btn btn-secondary" type="button">💬 Skicka SMS-fråga</button>
+          </div>
+        </div>
+
+        <!-- Familjegrupp -->
+        <div class="card">
+          <div class="card-header-row">
+            <h2 class="card-title">👨‍👩‍👧 Familjegrupp</h2>
+            <span id="activeGroupBadge" class="status-pill status-neutral">Ej ansluten</span>
+          </div>
+          <p class="muted small mb-12">Dela varningar och fråga varandra direkt i appen.</p>
+
+          <div class="inline-form mb-8">
+            <input id="groupMemberNameInput" type="text" placeholder="Ditt namn (t.ex. Mamma)" />
+          </div>
+          <div class="inline-form">
+            <input id="groupCodeInput" type="text" placeholder="Kod: KOLLAD-XXXX" maxlength="16" />
+            <button id="joinGroupBtn" class="btn btn-primary" type="button">Gå med</button>
+          </div>
+          <button id="createGroupBtn" class="text-btn mt-8" type="button">+ Skapa ny familjegrupp</button>
+
+          <div id="groupFeedSection" class="mt-16 hidden">
+            <div class="card-header-row mb-8">
+              <h3 class="sub-title">Gruppflöde & Frågor</h3>
+              <button id="refreshGroupBtn" class="text-btn" type="button">↻ Uppdatera</button>
+            </div>
+            <div id="groupEventsList" class="stack-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: VARNINGAR -->
+      <section id="tab-alerts" class="tab-panel">
+        <div class="card">
+          <div class="card-header-row">
+            <h2 class="card-title">🔔 Varningshistorik</h2>
+            <button id="clearAlertsBtn" class="text-btn" type="button">Rensa</button>
+          </div>
+          <p class="muted small mb-12">Här sparas kontroller med medel eller hög bedrägeririsk.</p>
+          <div id="alertsList" class="stack-list"></div>
+        </div>
+      </section>
+
+      <!-- TAB 5: AKUT-HJÄLP -->
+      <section id="tab-emergency" class="tab-panel">
+        <div class="card emergency-banner">
+          <h2 class="card-title">🆘 Råkade du klicka eller signera?</h2>
+          <p class="small mt-6">Behåll lugnet och följ stegen nedan i tur och ordning.</p>
+
+          <a id="emergencyCallTrustedBtn" class="btn btn-warning btn-full mt-12 hidden" href="tel:">
+            📞 Ring min trygghetskontakt nu
+          </a>
+        </div>
+
+        <div class="card">
+          <ol class="emergency-steps">
+            <li>
+              <strong>1. Spärra kort och BankID direkt</strong>
+              <p class="muted small">Ring din banks spärrservice omedelbart om du lämnat kortuppgifter eller signerat med BankID.</p>
+            </li>
+            <li>
+              <strong>2. Avbryt all kontakt med uppringaren</strong>
+              <p class="muted small">Lägg på luren och svara inte på fler SMS eller samtal från samma avsändare.</p>
+            </li>
+            <li>
+              <strong>3. Spara bevis</strong>
+              <p class="muted small">Ta skärmdumpar på SMS, telefonnummer och kontoutdrag innan du raderar något.</p>
+            </li>
+            <li>
+              <strong>4. Polisanmäl händelsen</strong>
+              <p class="muted small">Ring Polisen på 114 14 eller anmäl via polisen.se.</p>
+              <div class="two-col-actions mt-8">
+                <a class="btn btn-danger" href="tel:11414">📞 Ring 114 14</a>
+                <a class="btn btn-secondary" href="https://polisen.se" target="_blank" rel="noopener">🌐 polisen.se</a>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+    </main>
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="bottom-nav" aria-label="Huvudmeny">
+      <button class="nav-btn active" type="button" data-tab="home">
+        <span class="nav-icon">🛡️</span>
+        <span>Hem</span>
+      </button>
+      <button class="nav-btn" type="button" data-tab="radar">
+        <span class="nav-icon">📡</span>
+        <span>Radar</span>
+      </button>
+      <button class="nav-btn" type="button" data-tab="family">
+        <span class="nav-icon">❤️</span>
+        <span>Anhörig</span>
+      </button>
+      <button class="nav-btn" type="button" data-tab="alerts">
+        <span class="nav-icon">🔔</span>
+        <span>Varningar</span>
+      </button>
+      <button class="nav-btn" type="button" data-tab="emergency">
+        <span class="nav-icon">🆘</span>
+        <span>Akut</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+    <div class="modal-card">
+      <div class="card-header-row">
+        <h2 id="settingsModalTitle" class="card-title">Inställningar</h2>
+        <button id="closeSettingsBtn" class="icon-btn" type="button" aria-label="Stäng">✕</button>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <strong>Större och tydligare text</strong>
+          <p class="muted tiny">Ökar textstorlek och knappytor i hela appen</p>
+        </div>
+        <label class="switch">
+          <input id="largeTextToggle" type="checkbox" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <strong>Ljud & vibration vid varning</strong>
+          <p class="muted tiny">Ger tydlig signal när hög risk upptäcks</p>
+        </div>
+        <label class="switch">
+          <input id="soundVibrateToggle" type="checkbox" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <button id="clearAllDataBtn" class="btn btn-danger btn-full mt-16" type="button">
+        Rensa all lokal historik
+      </button>
+    </div>
+  </div>
+
+  <!-- PRO MODAL -->
+  <div id="proModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="proModalTitle">
+    <div class="modal-card">
+      <div class="card-header-row">
+        <h2 id="proModalTitle" class="card-title">⭐ Kollad PRO</h2>
+        <button id="closeProBtn" class="icon-btn" type="button" aria-label="Stäng">✕</button>
+      </div>
+      <p class="small mb-12">Fullt familjeskydd för hela hushållet:</p>
+      <ul class="pro-list">
+        <li>✅ Obegränsade skärmdumps- och SMS-kontroller</li>
+        <li>✅ Realtidsfrågor och svar i familjegruppen</li>
+        <li>✅ Automatisk dataläckagebevakning</li>
+        <li>✅ Prioriterade bluffvarningar i Sverige</li>
+      </ul>
+      <button id="activateProDemoBtn" class="btn btn-primary btn-full mt-16" type="button">
+        Starta 7 dagars gratis test
+      </button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
