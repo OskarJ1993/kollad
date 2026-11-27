@@ -1,5 +1,5 @@
 // ==========================================
-// KOLLAD v1.9.2 – Klientlogik (iOS / Android / Web)
+// KOLLAD v1.9.4 – Klientlogik (iOS / Android)
 // ==========================================
 
 const API_BASE = 'https://kollad.onrender.com';
@@ -20,17 +20,54 @@ const STORAGE_KEYS = {
 
 const DAILY_TIPS = [
   'Banker och myndigheter ber dig aldrig logga in eller signera med BankID via en länk i ett SMS.',
-  'Osäker på ett samtal från "banken"? Lägg på och ring själv till numret på ditt bankkort eller bankens officiella hemsida.',
-  'Paket-SMS som ber om 15–30 kr i tull eller frakt via en okänd länk är nästan alltid bedrägerier.',
-  'Ta hellre ett djupt andetag och fråga en anhörig i familjegruppen innan du klickar eller betalar.',
-  'Använd aldrig samma lösenord på flera olika webbplatser och konton.'
+  'Säljare som kräver förskottsswish ("swisha så skickar jag sen") och sedan blockar är ett klassiskt Marketplace-bedrägeri.',
+  'Ska du sälja på Marketplace? Du behöver aldrig klicka på en fraktlänk eller fylla i kortuppgifter för att ta emot pengar.',
+  'Lämna aldrig ut en vara på Marketplace enbart utifrån en Swish-skärmdump – kontrollera alltid i din egen bankapp.',
+  'Ta hellre ett djupt andetag och fråga en anhörig i familjegruppen innan du klickar eller betalar.'
 ];
+
+const MARKETPLACE_CHECKS = {
+  sell: [
+    {
+      text: 'Köparen vill skicka ett bud (PostNord/UPS/GLS) och ber dig öppna en länk för att ta emot pengar.',
+      critical: true,
+      warning: '100 % BEDRÄGERI: Du behöver aldrig klicka på en länk, ange kortnummer eller signera med BankID för att ta emot en betalning.'
+    },
+    {
+      text: 'Köparen har bara skickat en skärmdump på en Swish-betalning men pengarna syns inte i din bankapp.',
+      critical: true,
+      warning: 'STOPPA ÖVERLÄMNING: Falska Swish-kvitton är mycket vanliga på Marketplace. Lämna inte varan förrän pengarna syns på ditt konto.'
+    },
+    {
+      text: 'Köparen vill flytta konversationen till WhatsApp, SMS eller mejl direkt och ställer inga frågor om varan.',
+      critical: false,
+      warning: 'VARNINGSSIGNAL: Bedragare flyttar ofta chatten från Messenger för att skicka nätfiskelänkar.'
+    }
+  ],
+  buy: [
+    {
+      text: 'Säljaren kräver att du swishar förskott eller frakt ("swisha så skickar jag sen") innan du fått varan.',
+      critical: true,
+      warning: 'HÖG RISK: "Swisha så skickar jag sen" är en av de vanligaste bluffarna – många blockar direkt efter betalning. Swisha aldrig i förskott till okända.'
+    },
+    {
+      text: 'Swish-namnet som dyker upp i appen stämmer inte överens med säljarens namn på Facebook.',
+      critical: true,
+      warning: 'HÖG RISK: Avbryt betalningen om mottagarens namn inte matchar profilen – bedragare använder ofta målvakter.'
+    },
+    {
+      text: 'Priset är orimligt lågt och säljaren stressar med att "många andra står på kö".',
+      critical: false,
+      warning: 'VARNINGSSIGNAL: Konstgjord tidspress används för att få dig att swisha utan att tänka efter.'
+    }
+  ]
+};
 
 const QUIZ_QUESTIONS = [
   {
-    scenario: 'Du får ett SMS: "PostNord: Ditt paket kunde inte levereras. Bekräfta din adress och betala 15 kr på postnord-ombud-se.com"',
+    scenario: 'Du vill köpa en spelkonsol på Marketplace. Säljaren skriver: "Swisha 1 200 kr nu så bokar jag frakten och skickar kollinummer direkt."',
     isScam: true,
-    explanation: 'Bluff! PostNord ber aldrig om kortbetalning via okända domäner som slutar på "-ombud-se.com".'
+    explanation: 'Bluff! Klassiskt förskottsbedrägeri ("swisha så skickar jag sen"). Bedragare tar pengarna och blockar ofta direkt efteråt.'
   },
   {
     scenario: 'Du har själv beställt varor och får ett mejl från noreply@postnord.se utan betalningslänk som ber dig öppna den officiella PostNord-appen för att spåra.',
@@ -50,6 +87,7 @@ let groupPollTimer = null;
 let quizIndex = 0;
 let quizScore = 0;
 let currentTipIndex = 0;
+let currentMpRole = 'sell';
 
 function isProUser() {
   return localStorage.getItem(STORAGE_KEYS.proActive) === 'true';
@@ -80,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSettings();
   initNavigation();
   initDailyTip();
+  initMarketplaceCheck();
   initGuard();
   initQuickCheck();
   initScreenshotScanner();
@@ -105,6 +144,12 @@ function initDailyTip() {
     currentTipIndex = (currentTipIndex + 1) % DAILY_TIPS.length;
     renderDailyTip();
   });
+
+  document.getElementById('openMarketplaceQuickBtn').addEventListener('click', () => {
+    switchTab('radar');
+    const mpCard = document.getElementById('marketplaceCard');
+    if (mpCard) mpCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 }
 
 function renderDailyTip() {
@@ -112,6 +157,158 @@ function renderDailyTip() {
   if (el) {
     el.textContent = DAILY_TIPS[currentTipIndex];
   }
+}
+
+// ==========================================
+// MARKETPLACE- & KÖP/SÄLJ-KOLL + SWISH-BROMS
+// ==========================================
+function initMarketplaceCheck() {
+  const sellBtn = document.getElementById('mpRoleSellBtn');
+  const buyBtn = document.getElementById('mpRoleBuyBtn');
+
+  sellBtn.addEventListener('click', () => {
+    currentMpRole = 'sell';
+    sellBtn.classList.add('active');
+    buyBtn.classList.remove('active');
+    renderMarketplaceChecklist();
+  });
+
+  buyBtn.addEventListener('click', () => {
+    currentMpRole = 'buy';
+    buyBtn.classList.add('active');
+    sellBtn.classList.remove('active');
+    renderMarketplaceChecklist();
+  });
+
+  // Swish-bromsen: skicka nummer/namn/text till Snabbkollen
+  document.getElementById('mpCheckSwishBtn').addEventListener('click', async () => {
+    const swishInput = document.getElementById('mpSwishCheckInput');
+    const val = swishInput.value.trim();
+    if (!val) {
+      alert('Skriv in mottagarens nummer, Swish-namn eller meddelande först.');
+      return;
+    }
+    const checkInput = document.getElementById('checkInput');
+    checkInput.value = val.slice(0, 500);
+    document.getElementById('charCount').textContent = `${checkInput.value.length} / 500`;
+    switchTab('home');
+    await runTextCheck();
+  });
+
+  // Swish-bromsen: fråga familjegruppen / anhörig innan swish
+  document.getElementById('mpAskBeforeSwishBtn').addEventListener('click', async () => {
+    const swishVal = document.getElementById('mpSwishCheckInput').value.trim();
+    const counterparty = document.getElementById('mpCounterpartyInput').value.trim();
+    const itemPrice = document.getElementById('mpItemPriceInput').value.trim();
+    const snippet = swishVal || `${counterparty || 'Okänd säljare'} – ${itemPrice || 'Marketplace-swish'}`;
+    const summary = 'Swish-bromsen: Vill kolla med dig innan jag swishar på Marketplace.';
+
+    const group = JSON.parse(localStorage.getItem(STORAGE_KEYS.familyGroup) || 'null');
+    if (group && group.code) {
+      await askFamilyForHelp(snippet, summary);
+      return;
+    }
+
+    const contact = JSON.parse(localStorage.getItem(STORAGE_KEYS.trustedContact) || 'null');
+    if (contact && contact.phone) {
+      const msg = `Hej ${contact.name}! Jag funderar på att swisha på Marketplace (${snippet}). Kan du kika med mig innan jag betalar?`;
+      window.location.href = `sms:${contact.phone}?body=${encodeURIComponent(msg)}`;
+      return;
+    }
+
+    alert('Spara en trygghetskontakt eller gå med i en familjegrupp under fliken "Anhörig" först!');
+    switchTab('family');
+  });
+
+  document.getElementById('mpScanChatBtn').addEventListener('click', () => {
+    switchTab('home');
+    document.getElementById('screenshotInput').click();
+  });
+
+  document.getElementById('mpToggleMeetBtn').addEventListener('click', () => {
+    document.getElementById('mpMeetForm').classList.toggle('hidden');
+  });
+
+  document.getElementById('mpSendMeetBtn').addEventListener('click', async () => {
+    const counterparty = document.getElementById('mpCounterpartyInput').value.trim();
+    const itemPrice = document.getElementById('mpItemPriceInput').value.trim();
+    const location = document.getElementById('mpLocationInput').value.trim();
+
+    if (!counterparty && !itemPrice && !location) {
+      alert('Fyll i minst motpart, vara eller plats innan du skickar.');
+      return;
+    }
+
+    const roleText = currentMpRole === 'sell' ? 'sälja' : 'köpa';
+    const summary = `Trygghetsinfo (Marketplace): Ska ${roleText} ${itemPrice || 'vara'}`;
+    const snippet = `Motpart: ${counterparty || 'Ej angivet'} | Plats/tid: ${location || 'Ej angivet'}`;
+
+    const group = JSON.parse(localStorage.getItem(STORAGE_KEYS.familyGroup) || 'null');
+    if (group && group.code) {
+      await askFamilyForHelp(snippet, summary);
+      return;
+    }
+
+    const contact = JSON.parse(localStorage.getItem(STORAGE_KEYS.trustedContact) || 'null');
+    if (contact && contact.phone) {
+      const msg = `Hej ${contact.name}! Jag ska ${roleText} på Marketplace.\n${summary}\n${snippet}`;
+      window.location.href = `sms:${contact.phone}?body=${encodeURIComponent(msg)}`;
+      return;
+    }
+
+    alert('Spara en trygghetskontakt eller gå med i en familjegrupp under fliken "Anhörig" först!');
+    switchTab('family');
+  });
+
+  document.getElementById('mpGoEmergencyBtn').addEventListener('click', () => {
+    switchTab('emergency');
+  });
+
+  renderMarketplaceChecklist();
+}
+
+function renderMarketplaceChecklist() {
+  const container = document.getElementById('mpChecklistContainer');
+  const verdictBox = document.getElementById('mpVerdictBox');
+  const items = MARKETPLACE_CHECKS[currentMpRole] || [];
+
+  verdictBox.classList.add('hidden');
+  verdictBox.innerHTML = '';
+
+  container.innerHTML = items.map((item, idx) => `
+    <label class="check-item">
+      <input type="checkbox" data-idx="${idx}" />
+      <span>${escapeHtml(item.text)}</span>
+    </label>
+  `).join('');
+
+  container.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+    cb.addEventListener('change', evaluateMarketplaceChecklist);
+  });
+}
+
+function evaluateMarketplaceChecklist() {
+  const container = document.getElementById('mpChecklistContainer');
+  const verdictBox = document.getElementById('mpVerdictBox');
+  const items = MARKETPLACE_CHECKS[currentMpRole] || [];
+  const checkedIndices = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+    .map((el) => Number(el.dataset.idx));
+
+  if (!checkedIndices.length) {
+    verdictBox.classList.add('hidden');
+    return;
+  }
+
+  const selected = checkedIndices.map((i) => items[i]);
+  const hasCritical = selected.some((x) => x.critical);
+  const topWarning = selected.find((x) => x.critical) || selected[0];
+
+  verdictBox.classList.remove('hidden');
+  verdictBox.style.borderColor = hasCritical ? 'var(--danger)' : 'var(--warning)';
+  verdictBox.innerHTML = `
+    <strong>${hasCritical ? '🚨 Hög risk för bedrägeri' : '⚠️ Var extra försiktig'}</strong>
+    <p class="mt-6">${escapeHtml(topWarning.warning)}</p>
+  `;
 }
 
 // ==========================================
@@ -776,10 +973,10 @@ async function askFamilyForHelp(snippet, summary) {
         summary
       })
     });
-    alert('Frågan är skickad till din familjegrupp!');
+    alert('Delat med din familjegrupp!');
     switchTab('family');
   } catch (err) {
-    alert(`Kunde inte skicka fråga: ${err.message}`);
+    alert(`Kunde inte skicka till gruppen: ${err.message}`);
   }
 }
 
@@ -821,7 +1018,7 @@ async function loadGroupFeed() {
       return `
         <div class="list-item">
           <div class="card-header-row">
-            <strong>❓ Fråga från ${escapeHtml(ev.sender)}</strong>
+            <strong>❓ Från ${escapeHtml(ev.sender)}</strong>
             <span class="muted tiny">${escapeHtml(ev.time || '')}</span>
           </div>
           <p class="small mt-6">${escapeHtml(ev.summary || '')}</p>
