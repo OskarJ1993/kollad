@@ -1,5 +1,5 @@
 // ==========================================
-// KOLLAD v1.9.1 – Klientlogik (iOS / Android / Web)
+// KOLLAD v1.9.2 – Klientlogik (iOS / Android / Web)
 // ==========================================
 
 const API_BASE = 'https://kollad.onrender.com';
@@ -50,6 +50,10 @@ let groupPollTimer = null;
 let quizIndex = 0;
 let quizScore = 0;
 let currentTipIndex = 0;
+
+function isProUser() {
+  return localStorage.getItem(STORAGE_KEYS.proActive) === 'true';
+}
 
 // Hjälpfunktion för säkra API-anrop med x-app-key
 async function apiFetch(path, options = {}) {
@@ -113,6 +117,27 @@ function renderDailyTip() {
 // ==========================================
 // INSTÄLLNINGAR & PRO
 // ==========================================
+function updateProUI() {
+  const proBtn = document.getElementById('openProBtn');
+  const activateBtn = document.getElementById('activateProDemoBtn');
+  const modalTitle = document.getElementById('proModalTitle');
+  const active = isProUser();
+
+  if (proBtn) {
+    proBtn.textContent = active ? 'PRO ✓' : 'PRO';
+    proBtn.classList.toggle('is-active', active);
+  }
+
+  if (modalTitle) {
+    modalTitle.textContent = active ? '⭐ Kollad PRO (Aktivt)' : '⭐ Kollad PRO';
+  }
+
+  if (activateBtn) {
+    activateBtn.textContent = active ? 'PRO är aktivt ✓' : 'Starta 7 dagars gratis test';
+    activateBtn.disabled = active;
+  }
+}
+
 function initSettings() {
   const largeText = localStorage.getItem(STORAGE_KEYS.largeText) === 'true';
   const soundVibrate = localStorage.getItem(STORAGE_KEYS.soundVibrate) !== 'false';
@@ -133,6 +158,8 @@ function initSettings() {
     localStorage.setItem(STORAGE_KEYS.soundVibrate, String(soundVibrateToggle.checked));
   });
 
+  updateProUI();
+
   // Modaler
   const settingsModal = document.getElementById('settingsModal');
   const proModal = document.getElementById('proModal');
@@ -140,13 +167,17 @@ function initSettings() {
   document.getElementById('openSettingsBtn').addEventListener('click', () => settingsModal.classList.remove('hidden'));
   document.getElementById('closeSettingsBtn').addEventListener('click', () => settingsModal.classList.add('hidden'));
 
-  document.getElementById('openProBtn').addEventListener('click', () => proModal.classList.remove('hidden'));
+  document.getElementById('openProBtn').addEventListener('click', () => {
+    updateProUI();
+    proModal.classList.remove('hidden');
+  });
   document.getElementById('closeProBtn').addEventListener('click', () => proModal.classList.add('hidden'));
 
   document.getElementById('activateProDemoBtn').addEventListener('click', () => {
     localStorage.setItem(STORAGE_KEYS.proActive, 'true');
+    updateProUI();
     proModal.classList.add('hidden');
-    alert('Kollad PRO (7 dagars test) är nu aktiverat!');
+    alert('Kollad PRO är nu aktiverat!');
   });
 
   document.getElementById('clearAllDataBtn').addEventListener('click', () => {
@@ -290,7 +321,8 @@ async function runTextCheck() {
   }
 
   const now = Date.now();
-  if (now - lastCooldownTs < 2500) {
+  const cooldownMs = isProUser() ? 800 : 2500;
+  if (now - lastCooldownTs < cooldownMs) {
     alert('Vänta ett ögonblick mellan kontrollerna.');
     return;
   }
@@ -343,7 +375,8 @@ function initScreenshotScanner() {
     scanBtn.textContent = '⏳ Läser av skärmdump...';
 
     try {
-      const base64Image = await resizeImageToBase64(file, 1024);
+      const maxDim = isProUser() ? 1400 : 1024;
+      const base64Image = await resizeImageToBase64(file, maxDim);
       const data = await apiFetch('/api/check-image', {
         method: 'POST',
         body: JSON.stringify({ imageBase64: base64Image })
