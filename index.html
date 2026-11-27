@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0b1120" />
   <title>Kollad – Din säkerhetsvakt</title>
-  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="stylesheet" href="style.css?v=8" />
 </head>
 <body>
   <div class="app-shell">
@@ -80,7 +80,7 @@
           <div class="chips-row">
             <button class="chip example-chip" type="button" data-example="PostNord: Ditt paket har fastnat i tullen. Betala 19 kr via https://postnord-leverans-se.info för utlämning.">📦 Paket-SMS</button>
             <button class="chip example-chip" type="button" data-example="Viktigt från BankID: Ditt ID håller på att spärras. Logga in omgående på bankid-sakerhet.com">🏦 BankID-fälla</button>
-            <button class="chip example-chip" type="button" data-example="+44 20 7946 0991">📞 Utlandsnummer</button>
+            <button class="chip example-chip" type="button" data-example="Säljaren säger: Swisha 850 kr för frakten så skickar jag paketet direkt med spårning.">💸 Swisha-förskott</button>
           </div>
 
           <button id="checkSubmitBtn" class="btn btn-primary btn-full mt-12" type="button">
@@ -113,7 +113,7 @@
           </div>
         </div>
 
-        <!-- Dagens säkerhetstips -->
+        <!-- Dagens säkerhetstips + Marketplace-genväg -->
         <div class="card">
           <div class="card-header-row">
             <span class="muted tiny">💡 DAGENS SÄKERHETSTIPS</span>
@@ -122,6 +122,12 @@
           <p id="dailyTipText" class="small mt-6">
             Banker och myndigheter ber dig aldrig logga in eller signera med BankID via en länk i ett SMS.
           </p>
+          <div class="tip-footer-row">
+            <button id="openMarketplaceQuickBtn" class="marketplace-banner-btn" type="button">
+              <span>🛒 Köpa eller sälja på Marketplace? Kolla affären</span>
+              <span>→</span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -155,8 +161,87 @@
         </div>
       </section>
 
-      <!-- TAB 3: BLUFF-RADAR & TRÄNING -->
+      <!-- TAB 3: BLUFF-RADAR, MARKETPLACE & TRÄNING -->
       <section id="tab-radar" class="tab-panel">
+        <!-- MARKETPLACE-KOLLEN -->
+        <div id="marketplaceCard" class="card marketplace-card">
+          <div class="card-header-row">
+            <h2 class="card-title">🛒 Marketplace- & Köp/Sälj-koll</h2>
+            <span class="status-pill status-on">Snabbskydd</span>
+          </div>
+          <p class="muted small mt-6 mb-12">
+            Bocka i om något stämmer in på affären – Kollad bedömer risken direkt.
+          </p>
+
+          <div class="segmented-control" role="tablist" aria-label="Välj roll i affären">
+            <button id="mpRoleSellBtn" class="seg-btn active" type="button">Jag ska sälja</button>
+            <button id="mpRoleBuyBtn" class="seg-btn" type="button">Jag ska köpa</button>
+          </div>
+
+          <div id="mpChecklistContainer" class="checklist-stack mt-12"></div>
+
+          <div id="mpVerdictBox" class="mini-result hidden"></div>
+
+          <!-- Swish-bromsen: snabbkoll av nummer/namn + fråga anhörig innan swish -->
+          <div class="swish-brake-box">
+            <div class="card-header-row">
+              <strong class="small">🛑 Swish-bromsen innan du betalar</strong>
+              <span class="muted tiny">10 sek</span>
+            </div>
+            <p class="muted tiny mt-6">
+              Klistra in mottagarens nummer, Swish-namn eller meddelande för att granska innan du öppnar Swish.
+            </p>
+            <div class="inline-form mt-8">
+              <input id="mpSwishCheckInput" type="text" placeholder="Nummer, Swish-namn eller text..." />
+              <button id="mpCheckSwishBtn" class="btn btn-secondary btn-sm" type="button">Kolla</button>
+            </div>
+            <button id="mpAskBeforeSwishBtn" class="btn btn-warning btn-full btn-sm mt-8" type="button">
+              👨‍👩‍👧 Osäker? Fråga familjegruppen innan du swishar
+            </button>
+          </div>
+
+          <div class="two-col-actions mt-12">
+            <button id="mpScanChatBtn" class="btn btn-secondary btn-sm" type="button">
+              📸 Granska chatt / Swish
+            </button>
+            <button id="mpToggleMeetBtn" class="btn btn-secondary btn-sm" type="button">
+              📍 Dela träff med anhörig
+            </button>
+          </div>
+
+          <!-- Dela träff / affär med anhörig -->
+          <div id="mpMeetForm" class="meet-box hidden">
+            <p class="small"><strong>Skicka trygghetsinfo före överlämning</strong></p>
+            <p class="muted tiny mb-8">Delas i din familjegrupp (eller som SMS till din trygghetskontakt).</p>
+            <input id="mpCounterpartyInput" type="text" placeholder="Motpartens namn (t.ex. Alex på FB)" />
+            <input id="mpItemPriceInput" type="text" placeholder="Vara & belopp (t.ex. iPhone 14, 4 500 kr)" />
+            <input id="mpLocationInput" type="text" placeholder="Plats & tid (t.ex. Coop parkering kl 17:30)" />
+            <button id="mpSendMeetBtn" class="btn btn-primary btn-full btn-sm mt-8" type="button">
+              📤 Skicka affärsinfo till anhörig
+            </button>
+          </div>
+
+          <!-- Redan swishat & blockad? -->
+          <details class="evidence-details mt-12">
+            <summary class="accordion-summary small">
+              <span>🧾 Redan swishat & blivit blockad? Spara bevis nu</span>
+              <span class="muted tiny">Visa ▾</span>
+            </summary>
+            <div class="accordion-body">
+              <ol class="emergency-steps small">
+                <li><strong>1. Fota & spara Swish-kvittot</strong> – datum, tid, belopp och mottagarens nummer/namn.</li>
+                <li><strong>2. Skärmdumpa annons, profil & chatt</strong> – innan kontot eller meddelandena tas bort.</li>
+                <li><strong>3. Kontakta din bank direkt</strong> – meddela att du utsatts för bedrägeri.</li>
+                <li><strong>4. Polisanmäl (114 14 / polisen.se)</strong> – bifoga skärmdumpar och nummer.</li>
+              </ol>
+              <button id="mpGoEmergencyBtn" class="btn btn-danger btn-full btn-sm mt-12" type="button">
+                🆘 Öppna Akut-hjälpen
+              </button>
+            </div>
+          </details>
+        </div>
+
+        <!-- BLUFF-RADARN -->
         <div class="card">
           <div class="card-header-row">
             <h2 class="card-title">📡 Bluff-radarn i Sverige</h2>
@@ -166,7 +251,7 @@
           <div id="radarList" class="stack-list"></div>
         </div>
 
-        <!-- Bluff-träning (3 frågor) -->
+        <!-- BLUFF-TRÄNING (3 FRÅGOR) -->
         <div class="card">
           <div class="card-header-row">
             <h2 class="card-title">🎓 Bluff-träning (Veckans test)</h2>
@@ -256,7 +341,7 @@
       <!-- TAB 6: AKUT-HJÄLP -->
       <section id="tab-emergency" class="tab-panel">
         <div class="card emergency-banner">
-          <h2 class="card-title">🆘 Råkade du klicka eller signera?</h2>
+          <h2 class="card-title">🆘 Råkade du klicka, swisha eller signera?</h2>
           <p class="small mt-6">Behåll lugnet och följ stegen nedan i tur och ordning.</p>
 
           <a id="emergencyCallTrustedBtn" class="btn btn-warning btn-full mt-12 hidden" href="tel:">
@@ -271,12 +356,12 @@
               <p class="muted small">Ring din banks spärrservice omedelbart om du lämnat kortuppgifter eller signerat med BankID.</p>
             </li>
             <li>
-              <strong>2. Avbryt all kontakt med uppringaren</strong>
-              <p class="muted small">Lägg på luren och svara inte på fler SMS eller samtal från samma avsändare.</p>
+              <strong>2. Avbryt all kontakt & spara bevis</strong>
+              <p class="muted small">Ta skärmdumpar på Swish-kvitto, chatt, annons och nummer innan säljaren blockar dig eller raderar kontot.</p>
             </li>
             <li>
-              <strong>3. Spara bevis</strong>
-              <p class="muted small">Ta skärmdumpar på SMS, telefonnummer och kontoutdrag innan du raderar något.</p>
+              <strong>3. Kontakta din bank vid förskottsswish</strong>
+              <p class="muted small">Meddela din bank direkt om du swishat till en bedragare så att uppgifter och konto kan dokumenteras.</p>
             </li>
             <li>
               <strong>4. Polisanmäl händelsen</strong>
@@ -378,6 +463,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>
