@@ -32,12 +32,15 @@ html, body {
   font-size: calc(16px * var(--font-scale));
   line-height: 1.45;
   min-height: 100%;
+  overflow-x: clip;
 }
 
 .app-shell {
   max-width: 540px;
+  width: 100%;
   margin: 0 auto;
   min-height: 100vh;
+  overflow-x: clip;
   display: flex;
   flex-direction: column;
   padding-top: env(safe-area-inset-top);
@@ -544,8 +547,9 @@ textarea:focus, input:focus {
 .bottom-nav {
   position: fixed;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: 100%;
   max-width: 540px;
   background: rgba(19, 28, 49, 0.96);
@@ -569,6 +573,14 @@ textarea:focus, input:focus {
   font-weight: 600;
   padding: 6px 2px;
   cursor: pointer;
+  min-width: 0;
+}
+
+.nav-btn span:last-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .nav-btn.active {
