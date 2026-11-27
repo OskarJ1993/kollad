@@ -1,5 +1,5 @@
 // ==========================================
-// KOLLAD v1.9.0 – Klientlogik (iOS / Android / Web)
+// KOLLAD v1.9.1 – Klientlogik (iOS / Android / Web)
 // ==========================================
 
 const API_BASE = 'https://kollad.onrender.com';
@@ -17,6 +17,14 @@ const STORAGE_KEYS = {
   soundVibrate: 'kollad_sound_vibrate',
   proActive: 'kollad_pro_active'
 };
+
+const DAILY_TIPS = [
+  'Banker och myndigheter ber dig aldrig logga in eller signera med BankID via en länk i ett SMS.',
+  'Osäker på ett samtal från "banken"? Lägg på och ring själv till numret på ditt bankkort eller bankens officiella hemsida.',
+  'Paket-SMS som ber om 15–30 kr i tull eller frakt via en okänd länk är nästan alltid bedrägerier.',
+  'Ta hellre ett djupt andetag och fråga en anhörig i familjegruppen innan du klickar eller betalar.',
+  'Använd aldrig samma lösenord på flera olika webbplatser och konton.'
+];
 
 const QUIZ_QUESTIONS = [
   {
@@ -41,6 +49,7 @@ let lastCooldownTs = 0;
 let groupPollTimer = null;
 let quizIndex = 0;
 let quizScore = 0;
+let currentTipIndex = 0;
 
 // Hjälpfunktion för säkra API-anrop med x-app-key
 async function apiFetch(path, options = {}) {
@@ -66,6 +75,7 @@ async function apiFetch(path, options = {}) {
 document.addEventListener('DOMContentLoaded', () => {
   initSettings();
   initNavigation();
+  initDailyTip();
   initGuard();
   initQuickCheck();
   initScreenshotScanner();
@@ -78,6 +88,27 @@ document.addEventListener('DOMContentLoaded', () => {
   renderRecentHistory();
   handleIncomingShare();
 });
+
+// ==========================================
+// DAGENS SÄKERHETSTIPS
+// ==========================================
+function initDailyTip() {
+  const daySeed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+  currentTipIndex = daySeed % DAILY_TIPS.length;
+  renderDailyTip();
+
+  document.getElementById('nextTipBtn').addEventListener('click', () => {
+    currentTipIndex = (currentTipIndex + 1) % DAILY_TIPS.length;
+    renderDailyTip();
+  });
+}
+
+function renderDailyTip() {
+  const el = document.getElementById('dailyTipText');
+  if (el) {
+    el.textContent = DAILY_TIPS[currentTipIndex];
+  }
+}
 
 // ==========================================
 // INSTÄLLNINGAR & PRO
@@ -496,7 +527,7 @@ function initEmailCheck() {
     }
 
     btn.disabled = true;
-    btn.textContent = '...';
+    btn.textContent = '⏳ Kontrollerar...';
     try {
       const data = await apiFetch('/api/check-email', {
         method: 'POST',
@@ -511,7 +542,7 @@ function initEmailCheck() {
       resultEl.textContent = `Kunde inte kontrollera e-post: ${err.message}`;
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Kolla';
+      btn.textContent = '🔍 Kontrollera e-postadress';
     }
   });
 }
