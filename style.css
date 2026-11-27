@@ -123,6 +123,11 @@ html, body {
   color: #0b1120;
 }
 
+.pill-pro.is-active {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #042117;
+}
+
 .icon-btn {
   background: var(--surface);
   border: 1px solid var(--border);
