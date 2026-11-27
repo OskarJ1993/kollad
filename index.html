@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0b1120" />
   <title>Kollad – Din säkerhetsvakt</title>
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 <body>
   <div class="app-shell">
@@ -111,6 +111,17 @@
             <p class="muted tiny mb-6">Senaste kontroller (tryck för att fylla i igen):</p>
             <div id="recentHistoryList" class="history-chips"></div>
           </div>
+        </div>
+
+        <!-- Dagens säkerhetstips -->
+        <div class="card">
+          <div class="card-header-row">
+            <span class="muted tiny">💡 DAGENS SÄKERHETSTIPS</span>
+            <button id="nextTipBtn" class="text-btn tiny" type="button">Nytt tips →</button>
+          </div>
+          <p id="dailyTipText" class="small mt-6">
+            Banker och myndigheter ber dig aldrig logga in eller signera med BankID via en länk i ett SMS.
+          </p>
         </div>
       </section>
 
@@ -365,6 +376,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
