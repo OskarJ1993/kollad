@@ -9,7 +9,7 @@ const APP_API_KEY = process.env.APP_API_KEY || 'kollad-mobile-secret-2026';
 
 // Initiera Gemini (kräver GEMINI_API_KEY i miljövariabler)
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
 app.set('trust proxy', 1);
 app.use(cors());
