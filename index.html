@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0b1120" />
   <title>Kollad – Din säkerhetsvakt</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=3" />
 </head>
 <body>
   <div class="app-shell">
@@ -112,25 +112,39 @@
             <div id="recentHistoryList" class="history-chips"></div>
           </div>
         </div>
-
-        <!-- Dataläckagekoll (E-post) -->
-        <details class="card accordion-card">
-          <summary class="accordion-summary">
-            <span>📧 Dataläckagekoll för e-post</span>
-            <span class="muted tiny">Öppna ▾</span>
-          </summary>
-          <div class="accordion-body">
-            <p class="muted small mb-8">Kontrollera om din e-postadress förekommit i kända dataläckor.</p>
-            <div class="inline-form">
-              <input id="emailCheckInput" type="email" placeholder="namn@exempel.se" />
-              <button id="emailCheckBtn" class="btn btn-secondary" type="button">Kolla</button>
-            </div>
-            <div id="emailCheckResult" class="mini-result hidden"></div>
-          </div>
-        </details>
       </section>
 
-      <!-- TAB 2: BLUFF-RADAR & TRÄNING -->
+      <!-- TAB 2: E-POST & DATALÄCKAGE -->
+      <section id="tab-email" class="tab-panel">
+        <div class="card">
+          <h2 class="card-title">📧 Dataläckagekoll för e-post</h2>
+          <p class="muted small mt-6 mb-12">
+            Kontrollera om din e-postadress har läckt ut i kända dataintrång på nätet.
+          </p>
+
+          <div class="form-group">
+            <label for="emailCheckInput">Din e-postadress</label>
+            <input id="emailCheckInput" type="email" placeholder="namn@exempel.se" />
+          </div>
+
+          <button id="emailCheckBtn" class="btn btn-primary btn-full mt-8" type="button">
+            🔍 Kontrollera e-postadress
+          </button>
+
+          <div id="emailCheckResult" class="mini-result hidden"></div>
+        </div>
+
+        <div class="card">
+          <h3 class="sub-title">💡 Tips om din e-post har läckt</h3>
+          <ul class="pro-list mt-8">
+            <li>🔑 Byt lösenord direkt om du använder samma lösenord på flera tjänster.</li>
+            <li>🛡️ Slå på tvåstegsverifiering (2FA) på din mejl och dina viktigaste konton.</li>
+            <li>🎣 Var extra vaksam på mejl som utger sig för att komma från bank eller paketföretag.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- TAB 3: BLUFF-RADAR & TRÄNING -->
       <section id="tab-radar" class="tab-panel">
         <div class="card">
           <div class="card-header-row">
@@ -165,7 +179,7 @@
         </div>
       </section>
 
-      <!-- TAB 3: ANHÖRIG & FAMILJEGRUPP -->
+      <!-- TAB 4: ANHÖRIG & FAMILJEGRUPP -->
       <section id="tab-family" class="tab-panel">
         <!-- Trygghetskontakt -->
         <div class="card">
@@ -216,7 +230,7 @@
         </div>
       </section>
 
-      <!-- TAB 4: VARNINGAR -->
+      <!-- TAB 5: VARNINGAR -->
       <section id="tab-alerts" class="tab-panel">
         <div class="card">
           <div class="card-header-row">
@@ -228,7 +242,7 @@
         </div>
       </section>
 
-      <!-- TAB 5: AKUT-HJÄLP -->
+      <!-- TAB 6: AKUT-HJÄLP -->
       <section id="tab-emergency" class="tab-panel">
         <div class="card emergency-banner">
           <h2 class="card-title">🆘 Råkade du klicka eller signera?</h2>
@@ -266,11 +280,15 @@
       </section>
     </main>
 
-    <!-- BOTTOM NAVIGATION -->
+    <!-- BOTTOM NAVIGATION (6 FLIKAR) -->
     <nav class="bottom-nav" aria-label="Huvudmeny">
       <button class="nav-btn active" type="button" data-tab="home">
         <span class="nav-icon">🛡️</span>
         <span>Hem</span>
+      </button>
+      <button class="nav-btn" type="button" data-tab="email">
+        <span class="nav-icon">📧</span>
+        <span>E-post</span>
       </button>
       <button class="nav-btn" type="button" data-tab="radar">
         <span class="nav-icon">📡</span>
@@ -347,6 +365,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
